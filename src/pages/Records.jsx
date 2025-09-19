@@ -9,7 +9,8 @@ export default function Records() {
     name: '',
     species: '',
     breed: '',
-    age: ''
+    age: '',
+    image: null
   })
 
   useEffect(() => {
@@ -18,9 +19,12 @@ export default function Records() {
 
   const fetchAnimals = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const { data, error } = await supabase
         .from('animals')
         .select('*')
+        .eq('owner_id', user?.id)
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -35,6 +39,26 @@ export default function Records() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
+      let imageUrl = null
+      
+      // Upload image if provided
+      if (formData.image) {
+        const fileExt = formData.image.name.split('.').pop()
+        const fileName = `${user?.id}/${Date.now()}.${fileExt}`
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('animal-images')
+          .upload(fileName, formData.image)
+        
+        if (uploadError) throw uploadError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('animal-images')
+          .getPublicUrl(fileName)
+        
+        imageUrl = publicUrl
+      }
+      
       const { data, error } = await supabase
         .from('animals')
         .insert({
@@ -42,13 +66,14 @@ export default function Records() {
           species: formData.species,
           breed: formData.breed,
           age: parseInt(formData.age),
-          owner_id: user?.id
+          owner_id: user?.id,
+          image_url: imageUrl
         })
       
       if (error) throw error
       
       alert('Animal added successfully!')
-      setFormData({ name: '', species: '', breed: '', age: '' })
+      setFormData({ name: '', species: '', breed: '', age: '', image: null })
       setShowAddForm(false)
       fetchAnimals()
     } catch (error) {
@@ -81,11 +106,15 @@ export default function Records() {
           <p className="text-gray-600">Manage your farm animals and their records</p>
         </div>
         <button
-          onClick={() => setShowAddForm(true)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            setShowAddForm(!showAddForm)
+          }}
           className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          <span>Add Animal</span>
+          <span>{showAddForm ? 'Cancel' : 'Add Animal'}</span>
         </button>
       </div>
 
@@ -144,6 +173,15 @@ export default function Records() {
                 min="0"
               />
             </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Animal Photo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFormData({...formData, image: e.target.files[0]})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
             <div className="md:col-span-2 flex space-x-4">
               <button
                 type="submit"
@@ -172,6 +210,7 @@ export default function Records() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Species</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Breed</th>
@@ -182,13 +221,22 @@ export default function Records() {
             <tbody className="bg-white divide-y divide-gray-200">
               {animals.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
                     No animals added yet. Click "Add Animal" to get started.
                   </td>
                 </tr>
               ) : (
                 animals.map((animal) => (
                   <tr key={animal.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {animal.image_url ? (
+                        <img src={animal.image_url} alt={animal.name} className="w-12 h-12 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-500 text-xs">No Photo</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{animal.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{animal.species}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{animal.breed || '-'}</td>
