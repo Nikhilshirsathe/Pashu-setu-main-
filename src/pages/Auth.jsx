@@ -1,5 +1,6 @@
 import { Sprout, Stethoscope, Heart, Microscope, ArrowRight, Shield, Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 export default function Auth() {
   const [selectedRole, setSelectedRole] = useState(null)
@@ -45,10 +46,25 @@ export default function Auth() {
     setSelectedRole(role)
   }
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log('Login attempt:', { role: selectedRole, ...formData })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      })
+      
+      if (error) {
+        alert('Login failed: ' + error.message)
+        return
+      }
+      
+      // Store user role and redirect
+      localStorage.setItem('userRole', selectedRole.id)
+      window.location.href = '/dashboard'
+    } catch (error) {
+      alert('Login error: ' + error.message)
+    }
   }
 
   if (selectedRole) {

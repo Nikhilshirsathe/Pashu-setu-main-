@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
-import Login from './pages/Login'
+import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import Consultation from './pages/Consultation'
 import Lab from './pages/Lab'
@@ -10,6 +10,7 @@ import Education from './pages/Education'
 import Alerts from './pages/Alerts'
 import Pharmacy from './pages/Pharmacy'
 import Records from './pages/Records'
+import { supabase } from './lib/supabase'
 
 const pages = {
   dashboard: { component: Dashboard, title: 'Dashboard' },
@@ -28,13 +29,31 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
 
-  const handleLogin = (userData) => {
-    setUser(userData)
-    setIsAuthenticated(true)
-  }
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user)
+        setIsAuthenticated(true)
+      }
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser(session.user)
+        setIsAuthenticated(true)
+      } else {
+        setUser(null)
+        setIsAuthenticated(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />
+    return <Auth />
   }
 
   const CurrentPage = pages[activeSection].component

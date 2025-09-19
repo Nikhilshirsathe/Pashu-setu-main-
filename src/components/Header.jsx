@@ -1,4 +1,5 @@
-import { Menu, CloudSun, User, Bell, Search, ChevronDown } from 'lucide-react'
+import { Menu, CloudSun, User, Bell, Search, ChevronDown, LogOut } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 export default function Header({ isOpen, setIsOpen, user }) {
   return (
@@ -46,6 +47,21 @@ export default function Header({ isOpen, setIsOpen, user }) {
           </button>
           
           {/* User Profile */}
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-2 rounded-xl border border-emerald-200">
+              <User className="w-5 h-5 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-700">
+                {user?.email || 'User'}
+              </span>
+            </div>
+            <button 
+              onClick={() => supabase.auth.signOut()}
+              className="p-2 hover:bg-red-50 rounded-xl transition-all duration-200 hover:shadow-md group"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5 text-neutral-600 group-hover:text-red-600" />
+            </button>
+          </div>
 
         </div>
       </div>
