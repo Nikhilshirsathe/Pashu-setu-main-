@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Auth from './pages/Auth'
+import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import Consultation from './pages/Consultation'
 import Lab from './pages/Lab'
@@ -28,8 +29,17 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
+  const [currentPage, setCurrentPage] = useState('auth')
 
   useEffect(() => {
+    // Check URL for routing
+    const path = window.location.pathname
+    if (path === '/signup') {
+      setCurrentPage('signup')
+    } else {
+      setCurrentPage('auth')
+    }
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -53,7 +63,7 @@ export default function App() {
   }, [])
 
   if (!isAuthenticated) {
-    return <Auth />
+    return currentPage === 'signup' ? <SignUp /> : <Auth />
   }
 
   const CurrentPage = pages[activeSection].component
