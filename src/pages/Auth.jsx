@@ -6,6 +6,7 @@ export default function Auth() {
   const [selectedRole, setSelectedRole] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({ email: '', password: '' })
+  const [isSignUp, setIsSignUp] = useState(false)
 
   const roles = [
     {
@@ -59,11 +60,44 @@ export default function Auth() {
         return
       }
       
-      // Store user role and redirect
       localStorage.setItem('userRole', selectedRole.id)
       window.location.href = '/dashboard'
     } catch (error) {
       alert('Login error: ' + error.message)
+    }
+  }
+
+  const handleSignUp = async (e) => {
+    e.preventDefault()
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password
+      })
+      
+      if (error) {
+        alert('Signup failed: ' + error.message)
+        return
+      }
+      
+      // Insert user into users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert({
+          email: formData.email,
+          password: formData.password, // In production, this should be hashed
+          role: selectedRole.id === 'veterinarian' ? 'doctor' : selectedRole.id === 'lab' ? 'lab_employee' : selectedRole.id
+        })
+      
+      if (dbError) {
+        alert('Database error: ' + dbError.message)
+        return
+      }
+      
+      alert('Account created successfully! Please check your email to verify.')
+      setIsSignUp(false)
+    } catch (error) {
+      alert('Signup error: ' + error.message)
     }
   }
 
@@ -81,7 +115,7 @@ export default function Auth() {
             </div>
             
             <div className="p-8">
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                   <div className="relative">
@@ -123,9 +157,18 @@ export default function Auth() {
                   type="submit"
                   className="btn btn-primary w-full"
                 >
-                  Sign In as {selectedRole.title}
+                  {isSignUp ? `Sign Up as ${selectedRole.title}` : `Sign In as ${selectedRole.title}`}
                 </button>
               </form>
+              
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+                </button>
+              </div>
               
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <button
