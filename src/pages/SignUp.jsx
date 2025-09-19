@@ -43,24 +43,18 @@ export default function SignUp() {
     try {
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            role: selectedRole.id === 'veterinarian' ? 'doctor' : selectedRole.id === 'lab' ? 'lab_employee' : selectedRole.id
+          },
+          emailRedirectTo: window.location.origin
+        }
       })
       
       if (error) {
         alert('Signup failed: ' + error.message)
-        return
-      }
-      
-      const { error: dbError } = await supabase
-        .from('users')
-        .insert({
-          email: formData.email,
-          password: formData.password,
-          role: selectedRole.id === 'veterinarian' ? 'doctor' : selectedRole.id === 'lab' ? 'lab_employee' : selectedRole.id
-        })
-      
-      if (dbError) {
-        alert('Database error: ' + dbError.message)
         return
       }
       
