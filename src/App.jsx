@@ -26,7 +26,7 @@ const pages = {
 
 export default function App() {
   const [activeSection, setActiveSection] = useState('dashboard')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
   const [currentPage, setCurrentPage] = useState('auth')
