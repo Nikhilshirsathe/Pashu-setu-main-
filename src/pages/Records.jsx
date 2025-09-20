@@ -1,9 +1,11 @@
-import { ClipboardList, FolderOpen, Plus, Edit, Trash2 } from 'lucide-react'
+import { ClipboardList, FolderOpen, Plus, Edit, Trash2, Heart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function Records() {
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showHealthForm, setShowHealthForm] = useState(false)
+  const [selectedAnimal, setSelectedAnimal] = useState(null)
   const [animals, setAnimals] = useState([])
   const [formData, setFormData] = useState({
     name: '',
@@ -11,6 +13,21 @@ export default function Records() {
     breed: '',
     age: '',
     image: null
+  })
+  const [healthData, setHealthData] = useState({
+    animal_id: '',
+    tag_number: '',
+    sex: '',
+    weight: '',
+    growth_stage: '',
+    temperature: '',
+    respiratory_rate: '',
+    heart_rate: '',
+    feed_intake: '',
+    water_intake: '',
+    vaccination_record: '',
+    past_illness: '',
+    medication: ''
   })
 
   useEffect(() => {
@@ -98,6 +115,56 @@ export default function Records() {
     }
   }
 
+  const handleHealthRecord = async (e) => {
+    e.preventDefault()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      const { data, error } = await supabase
+        .from('health_records')
+        .insert({
+          animal_id: selectedAnimal.id,
+          diagnosis: `Health Check - ${healthData.growth_stage}`,
+          treatment: `Weight: ${healthData.weight}kg, Temp: ${healthData.temperature}°C`,
+          symptoms: `Respiratory: ${healthData.respiratory_rate}/min, Heart: ${healthData.heart_rate}/min, Feed: ${healthData.feed_intake}, Water: ${healthData.water_intake}`,
+          vet_id: user?.id
+        })
+      
+      if (error) throw error
+      
+      alert('Health record saved successfully!')
+      setHealthData({
+        animal_id: '',
+        tag_number: '',
+        sex: '',
+        weight: '',
+        growth_stage: '',
+        temperature: '',
+        respiratory_rate: '',
+        heart_rate: '',
+        feed_intake: '',
+        water_intake: '',
+        vaccination_record: '',
+        past_illness: '',
+        medication: ''
+      })
+      setShowHealthForm(false)
+      setSelectedAnimal(null)
+    } catch (error) {
+      alert('Error saving health record: ' + error.message)
+    }
+  }
+
+  const openHealthForm = (animal) => {
+    if (animal.species === 'Pig') {
+      setSelectedAnimal(animal)
+      setHealthData({...healthData, animal_id: animal.id, tag_number: animal.id})
+      setShowHealthForm(true)
+    } else {
+      alert('Detailed health management is currently available for pigs only.')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -143,13 +210,17 @@ export default function Records() {
                 required
               >
                 <option value="">Select species</option>
-                <option value="Cow">Cow</option>
-                <option value="Buffalo">Buffalo</option>
-                <option value="Goat">Goat</option>
-                <option value="Sheep">Sheep</option>
-                <option value="Pig">Pig</option>
-                <option value="Chicken">Chicken</option>
-                <option value="Horse">Horse</option>
+                <option value="Cow">🐄 Cow</option>
+                <option value="Buffalo">🐃 Buffalo</option>
+                <optgroup label="Other Animals">
+                  <option value="Goat">🐐 Goat</option>
+                  <option value="Sheep">🐑 Sheep</option>
+                  <option value="Pig">🐷 Pig</option>
+                  <option value="Chicken">🐔 Chicken</option>
+                  <option value="Horse">🐎 Horse</option>
+                  <option value="Dog">🐕 Dog</option>
+                  <option value="Cat">🐱 Cat</option>
+                </optgroup>
               </select>
             </div>
             <div>
@@ -243,6 +314,13 @@ export default function Records() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{animal.age || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-2">
+                        <button 
+                          onClick={() => openHealthForm(animal)}
+                          className="text-green-600 hover:text-green-800"
+                          title="Health Management"
+                        >
+                          <Heart className="w-4 h-4" />
+                        </button>
                         <button className="text-blue-600 hover:text-blue-800">
                           <Edit className="w-4 h-4" />
                         </button>
@@ -261,6 +339,162 @@ export default function Records() {
           </table>
         </div>
       </div>
+
+      {/* Pig Health Management Form */}
+      {showHealthForm && selectedAnimal && (
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">
+            🐷 Health Management - {selectedAnimal.name}
+          </h3>
+          <form onSubmit={handleHealthRecord} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Animal ID / Tag Number</label>
+              <input
+                type="text"
+                value={healthData.tag_number}
+                onChange={(e) => setHealthData({...healthData, tag_number: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Unique tag number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+              <select
+                value={healthData.sex}
+                onChange={(e) => setHealthData({...healthData, sex: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Select sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+              <input
+                type="number"
+                value={healthData.weight}
+                onChange={(e) => setHealthData({...healthData, weight: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Current weight"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Growth Stage</label>
+              <select
+                value={healthData.growth_stage}
+                onChange={(e) => setHealthData({...healthData, growth_stage: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Select stage</option>
+                <option value="Piglet">Piglet</option>
+                <option value="Juvenile">Juvenile</option>
+                <option value="Adult">Adult</option>
+                <option value="Senior">Senior</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Temperature (°C)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={healthData.temperature}
+                onChange={(e) => setHealthData({...healthData, temperature: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Body temperature"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Respiratory Rate (/min)</label>
+              <input
+                type="number"
+                value={healthData.respiratory_rate}
+                onChange={(e) => setHealthData({...healthData, respiratory_rate: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Breaths per minute"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Heart Rate (/min)</label>
+              <input
+                type="number"
+                value={healthData.heart_rate}
+                onChange={(e) => setHealthData({...healthData, heart_rate: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Beats per minute"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Feed Intake (daily)</label>
+              <input
+                type="text"
+                value={healthData.feed_intake}
+                onChange={(e) => setHealthData({...healthData, feed_intake: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Quantity & type of feed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Water Intake (daily)</label>
+              <input
+                type="text"
+                value={healthData.water_intake}
+                onChange={(e) => setHealthData({...healthData, water_intake: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                placeholder="Daily water consumption"
+              />
+            </div>
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Vaccination Record</label>
+              <textarea
+                value={healthData.vaccination_record}
+                onChange={(e) => setHealthData({...healthData, vaccination_record: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                rows="2"
+                placeholder="Dates, types of vaccines given"
+              />
+            </div>
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Past Illness</label>
+              <textarea
+                value={healthData.past_illness}
+                onChange={(e) => setHealthData({...healthData, past_illness: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                rows="2"
+                placeholder="Previous diseases or conditions"
+              />
+            </div>
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Medication</label>
+              <textarea
+                value={healthData.medication}
+                onChange={(e) => setHealthData({...healthData, medication: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                rows="2"
+                placeholder="Current or past medications administered"
+              />
+            </div>
+            <div className="md:col-span-3 flex space-x-4">
+              <button
+                type="submit"
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors"
+              >
+                Save Health Record
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowHealthForm(false)
+                  setSelectedAnimal(null)
+                }}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
