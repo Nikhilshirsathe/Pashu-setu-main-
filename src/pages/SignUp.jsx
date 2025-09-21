@@ -48,18 +48,22 @@ export default function SignUp() {
           data: {
             name: formData.name,
             role: selectedRole.id === 'veterinarian' ? 'doctor' : selectedRole.id === 'lab' ? 'lab_employee' : selectedRole.id
-          },
-          emailRedirectTo: window.location.origin
+          }
         }
       })
       
       if (error) {
-        alert('Signup failed: ' + error.message)
+        if (error.message.includes('already registered') || error.message.includes('email already exists')) {
+          alert('User already exists with a different role')
+        } else {
+          alert('Signup failed: ' + error.message)
+        }
         return
       }
       
-      alert('Account created successfully! Please check your email to verify.')
-      window.location.href = '/'
+      alert('Account created successfully! You can now login.')
+      window.history.pushState({}, '', '/')
+      window.location.reload()
     } catch (error) {
       alert('Signup error: ' + error.message)
     }

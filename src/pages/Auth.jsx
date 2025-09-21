@@ -56,8 +56,17 @@ export default function Auth() {
         return
       }
       
+      // Check if user's registered role matches selected role
+      const userRole = data.user?.user_metadata?.role
+      const normalizedUserRole = userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole
+      
+      if (normalizedUserRole !== selectedRole) {
+        await supabase.auth.signOut()
+        alert(isHindi ? 'यह ईमेल पहले से किसी और भूमिका में पंजीकृत है' : 'User already exists with a different role')
+        return
+      }
+      
       localStorage.setItem('userRole', selectedRole)
-      window.location.href = '/dashboard'
     } catch (error) {
       alert(isHindi ? 'लॉगिन त्रुटि: ' + error.message : 'Login error: ' + error.message)
     }
@@ -66,9 +75,9 @@ export default function Auth() {
 
 
   return (
-    <div className="h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4 overflow-hidden">
-      <div className="w-full max-w-4xl h-full flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-green-100 w-full max-w-md max-h-full">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4 py-8">
+      <div className="w-full max-w-4xl flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-green-100 w-full max-w-md my-4">
           {/* Header Section */}
           <div className="text-center p-4 bg-gradient-to-br from-green-500 to-emerald-600">
             <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">

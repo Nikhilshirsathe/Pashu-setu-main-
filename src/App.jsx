@@ -45,6 +45,10 @@ export default function App() {
       if (session) {
         setUser(session.user)
         setIsAuthenticated(true)
+        // Update URL to root when authenticated
+        if (window.location.pathname !== '/') {
+          window.history.pushState({}, '', '/')
+        }
       }
     })
 
@@ -53,9 +57,12 @@ export default function App() {
       if (session) {
         setUser(session.user)
         setIsAuthenticated(true)
+        // Update URL to root when authenticated
+        window.history.pushState({}, '', '/')
       } else {
         setUser(null)
         setIsAuthenticated(false)
+        setCurrentPage('auth')
       }
     })
 
