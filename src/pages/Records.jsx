@@ -1,11 +1,14 @@
-import { ClipboardList, FolderOpen, Plus, Edit, Trash2, Heart } from 'lucide-react'
+import { ClipboardList, FolderOpen, Plus, Edit, Trash2, Heart, Calendar, Syringe, Clock } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function Records() {
+  const [userRole, setUserRole] = useState('farmer')
   const [showAddForm, setShowAddForm] = useState(false)
   const [showHealthForm, setShowHealthForm] = useState(false)
   const [showAnimalReport, setShowAnimalReport] = useState(false)
+  const [showVaccinationSchedule, setShowVaccinationSchedule] = useState(false)
+  const [vaccinationSchedule, setVaccinationSchedule] = useState([])
   const [selectedAnimal, setSelectedAnimal] = useState(null)
   const [animals, setAnimals] = useState([])
   const [animalHealthRecords, setAnimalHealthRecords] = useState([])
@@ -23,50 +26,88 @@ export default function Records() {
     weight: '',
     growth_stage: '',
     temperature: '',
-    respiratory_rate: '',
-    heart_rate: '',
-    feed_intake: '',
-    water_intake: '',
     vaccination_record: '',
     past_illness: '',
     medication: '',
-    last_vaccination_date: '',
-    next_vaccination_due: '',
-    vaccination_status: 'Up to date',
-    health_status: 'Healthy',
-    feeding_schedule: '',
-    special_notes: '',
-    last_medication_date: '',
-    last_checkup_date: '',
-    next_checkup_due: '',
-    last_feeding_time: '',
-    breeding_status: '',
-    pregnancy_status: '',
-    // Poultry-specific fields
-    flock_id: '',
-    batch_number: '',
-    flock_size: '',
-    mortality_rate: '',
-    feed_conversion_ratio: '',
-    water_intake_ml: '',
-    droppings_condition: '',
-    feather_condition: '',
-    respiratory_signs: '',
-    growth_rate: '',
-    egg_production_rate: '',
-    egg_weight: '',
-    shell_quality: '',
-    housing_type: '',
-    stocking_density: '',
-    ventilation_status: '',
-    temperature_celsius: '',
-    humidity_percent: '',
-    lighting_schedule: ''
+    last_vaccination_date: ''
   })
 
   useEffect(() => {
-    fetchAnimals()
+    const role = localStorage.getItem('userRole') || 'farmer'
+    setUserRole(role)
+    if (role === 'farmer') {
+      fetchAnimals()
+    }
   }, [])
+
+  useEffect(() => {
+    if (animals.length > 0) {
+      fetchAllHealthRecords()
+    }
+  }, [animals])
+
+  const fetchAllHealthRecords = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const animalIds = animals.map(animal => animal.id)
+      
+      const { data, error } = await supabase
+        .from('health_records')
+        .select('*')
+        .in('animal_id', animalIds)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setAnimalHealthRecords(data || [])
+      generateVaccinationSchedule(data || [])
+    } catch (error) {
+      console.error('Error fetching health records:', error)
+    }
+  }
+
+  const generateVaccinationSchedule = (healthRecords = animalHealthRecords) => {
+    const schedule = []
+    const today = new Date()
+    
+    animals.forEach(animal => {
+      // Get last vaccination from health records
+      const lastVaccination = healthRecords
+        .filter(record => record.animal_id === animal.id && record.last_vaccination_date)
+        .sort((a, b) => new Date(b.last_vaccination_date) - new Date(a.last_vaccination_date))[0]
+      
+      const lastVacDate = lastVaccination ? new Date(lastVaccination.last_vaccination_date) : null
+      
+      // Calculate next vaccination dates based on species
+      const getVaccinationInterval = (species) => {
+        switch(species.toLowerCase()) {
+          case 'pig': return 180 // 6 months
+          case 'chicken': return 90 // 3 months
+          case 'cow':
+          case 'buffalo': return 365 // 1 year
+          case 'goat':
+          case 'sheep': return 180 // 6 months
+          default: return 365 // 1 year default
+        }
+      }
+      
+      const interval = getVaccinationInterval(animal.species)
+      const nextVacDate = lastVacDate ? 
+        new Date(lastVacDate.getTime() + interval * 24 * 60 * 60 * 1000) :
+        new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days if no previous vaccination
+      
+      const daysUntil = Math.ceil((nextVacDate - today) / (1000 * 60 * 60 * 24))
+      
+      schedule.push({
+        animal,
+        lastVaccination: lastVacDate,
+        nextVaccination: nextVacDate,
+        daysUntil,
+        status: daysUntil < 0 ? 'overdue' : daysUntil <= 7 ? 'due_soon' : 'scheduled'
+      })
+    })
+    
+    setVaccinationSchedule(schedule.sort((a, b) => a.daysUntil - b.daysUntil))
+  }
 
   const fetchAnimals = async () => {
     try {
@@ -179,48 +220,13 @@ export default function Records() {
           weight: healthData.weight ? parseFloat(healthData.weight) : null,
           growth_stage: healthData.growth_stage,
           temperature: healthData.temperature ? parseFloat(healthData.temperature) : null,
-          respiratory_rate: healthData.respiratory_rate ? parseInt(healthData.respiratory_rate) : null,
-          heart_rate: healthData.heart_rate ? parseInt(healthData.heart_rate) : null,
-          feed_intake: healthData.feed_intake,
-          water_intake: healthData.water_intake,
           vaccination_record: healthData.vaccination_record,
           past_illness: healthData.past_illness,
           medication: healthData.medication,
           last_vaccination_date: healthData.last_vaccination_date || null,
-          next_vaccination_due: healthData.next_vaccination_due || null,
-          vaccination_status: healthData.vaccination_status,
-          health_status: healthData.health_status,
-          feeding_schedule: healthData.feeding_schedule,
-          special_notes: healthData.special_notes,
-          last_medication_date: healthData.last_medication_date || null,
-          last_checkup_date: healthData.last_checkup_date || null,
-          next_checkup_due: healthData.next_checkup_due || null,
-          last_feeding_time: healthData.last_feeding_time || null,
-          breeding_status: healthData.breeding_status,
-          pregnancy_status: healthData.pregnancy_status,
-          // Poultry-specific fields
-          flock_id: healthData.flock_id,
-          batch_number: healthData.batch_number,
-          flock_size: healthData.flock_size ? parseInt(healthData.flock_size) : null,
-          mortality_rate: healthData.mortality_rate ? parseFloat(healthData.mortality_rate) : null,
-          feed_conversion_ratio: healthData.feed_conversion_ratio ? parseFloat(healthData.feed_conversion_ratio) : null,
-          water_intake_ml: healthData.water_intake_ml ? parseInt(healthData.water_intake_ml) : null,
-          droppings_condition: healthData.droppings_condition,
-          feather_condition: healthData.feather_condition,
-          respiratory_signs: healthData.respiratory_signs,
-          growth_rate: healthData.growth_rate ? parseFloat(healthData.growth_rate) : null,
-          egg_production_rate: healthData.egg_production_rate ? parseFloat(healthData.egg_production_rate) : null,
-          egg_weight: healthData.egg_weight ? parseFloat(healthData.egg_weight) : null,
-          shell_quality: healthData.shell_quality,
-          housing_type: healthData.housing_type,
-          stocking_density: healthData.stocking_density ? parseInt(healthData.stocking_density) : null,
-          ventilation_status: healthData.ventilation_status,
-          temperature_celsius: healthData.temperature_celsius ? parseFloat(healthData.temperature_celsius) : null,
-          humidity_percent: healthData.humidity_percent ? parseFloat(healthData.humidity_percent) : null,
-          lighting_schedule: healthData.lighting_schedule,
-          diagnosis: `${selectedAnimal.species} Health Check - ${new Date().toLocaleDateString()}`,
-          treatment: `Weight: ${healthData.weight || 'N/A'}kg${healthData.temperature ? `, Temp: ${healthData.temperature}°C` : ''}${selectedAnimal.species === 'Chicken' && healthData.flock_size ? `, Flock: ${healthData.flock_size} birds` : ''}`,
-          symptoms: healthData.special_notes || 'Regular health assessment',
+          diagnosis: `🐾 Animal Health Record - ${new Date().toLocaleDateString()}`,
+          treatment: `Weight: ${healthData.weight || 'N/A'}kg${healthData.temperature ? `, Temp: ${healthData.temperature}°C` : ''}`,
+          symptoms: `Growth Stage: ${healthData.growth_stage || 'Not specified'}`,
           vet_id: user?.id
         })
       
@@ -234,25 +240,10 @@ export default function Records() {
         weight: '',
         growth_stage: '',
         temperature: '',
-        respiratory_rate: '',
-        heart_rate: '',
-        feed_intake: '',
-        water_intake: '',
         vaccination_record: '',
         past_illness: '',
         medication: '',
-        last_vaccination_date: '',
-        next_vaccination_due: '',
-        vaccination_status: 'Up to date',
-        health_status: 'Healthy',
-        feeding_schedule: '',
-        special_notes: '',
-        last_medication_date: '',
-        last_checkup_date: '',
-        next_checkup_due: '',
-        last_feeding_time: '',
-        breeding_status: '',
-        pregnancy_status: ''
+        last_vaccination_date: ''
       })
       setShowHealthForm(false)
       // Refresh health records if report is open
@@ -261,6 +252,8 @@ export default function Records() {
       } else {
         setSelectedAnimal(null)
       }
+      // Refresh vaccination schedule
+      fetchAllHealthRecords()
     } catch (error) {
       alert('Error saving health record: ' + error.message)
     }
@@ -275,30 +268,15 @@ export default function Records() {
     setSelectedAnimal(animal)
     setHealthData({
       animal_id: '',
-      tag_number: `TAG-${animal.name}`,
+      tag_number: `${animal.name}-${Date.now()}`,
       sex: '',
       weight: '',
       growth_stage: '',
       temperature: '',
-      respiratory_rate: '',
-      heart_rate: '',
-      feed_intake: '',
-      water_intake: '',
       vaccination_record: '',
       past_illness: '',
       medication: '',
-      last_vaccination_date: '',
-      next_vaccination_due: '',
-      vaccination_status: 'Up to date',
-      health_status: 'Healthy',
-      feeding_schedule: '',
-      special_notes: '',
-      last_medication_date: '',
-      last_checkup_date: new Date().toISOString().split('T')[0],
-      next_checkup_due: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-      last_feeding_time: '',
-      breeding_status: '',
-      pregnancy_status: ''
+      last_vaccination_date: ''
     })
     setShowHealthForm(true)
   }
@@ -315,6 +293,17 @@ export default function Records() {
     fetchAnimalHealthRecords(animal.id)
   }
 
+  if (userRole !== 'farmer') {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Access Restricted</h2>
+          <p className="text-gray-600">Animal Records are only available for farmers.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -322,18 +311,97 @@ export default function Records() {
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Animal Records</h2>
           <p className="text-gray-600">Manage your farm animals and their records</p>
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault()
-            setShowAddForm(!showAddForm)
-          }}
-          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          <span>{showAddForm ? 'Cancel' : 'Add Animal'}</span>
-        </button>
+        <div className="flex space-x-3">
+          <button
+            type="button"
+            onClick={() => setShowVaccinationSchedule(!showVaccinationSchedule)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Calendar className="w-5 h-5" />
+            <span>Vaccination Schedule</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              setShowAddForm(!showAddForm)
+            }}
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>{showAddForm ? 'Cancel' : 'Add Animal'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Vaccination Schedule */}
+      {showVaccinationSchedule && (
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center space-x-2">
+            <Syringe className="w-6 h-6 text-blue-600" />
+            <span>Vaccination Schedule</span>
+          </h3>
+          <div className="space-y-4">
+            {vaccinationSchedule.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No animals found. Add animals to see vaccination schedule.</p>
+            ) : (
+              vaccinationSchedule.map((item, index) => (
+                <div key={index} className={`p-4 rounded-lg border-l-4 ${
+                  item.status === 'overdue' ? 'bg-red-50 border-red-500' :
+                  item.status === 'due_soon' ? 'bg-orange-50 border-orange-500' :
+                  'bg-green-50 border-green-500'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        item.status === 'overdue' ? 'bg-red-100 text-red-600' :
+                        item.status === 'due_soon' ? 'bg-orange-100 text-orange-600' :
+                        'bg-green-100 text-green-600'
+                      }`}>
+                        <Syringe className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {item.animal.name} - {item.animal.species}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Next vaccination: {item.nextVaccination.toLocaleDateString()}
+                        </p>
+                        {item.lastVaccination && (
+                          <p className="text-xs text-gray-500">
+                            Last vaccinated: {item.lastVaccination.toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`badge ${
+                        item.status === 'overdue' ? 'badge-danger' :
+                        item.status === 'due_soon' ? 'badge-warning' :
+                        'badge-success'
+                      }`}>
+                        {item.status === 'overdue' ? `${Math.abs(item.daysUntil)} days overdue` :
+                         item.status === 'due_soon' ? `Due in ${item.daysUntil} days` :
+                         `${item.daysUntil} days remaining`}
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>
+                          {item.animal.species === 'Pig' ? '6 months interval' :
+                           item.animal.species === 'Chicken' ? '3 months interval' :
+                           item.animal.species === 'Cow' || item.animal.species === 'Buffalo' ? '1 year interval' :
+                           item.animal.species === 'Goat' || item.animal.species === 'Sheep' ? '6 months interval' :
+                           '1 year interval'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Add Animal Form */}
       {showAddForm && (
@@ -519,491 +587,129 @@ export default function Records() {
             </div>
           </div>
 
-          <form onSubmit={handleHealthRecord} className="p-6">
-            {/* Basic Information Section */}
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                📋 Basic Information
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🏷️ Tag Number</label>
-                  <input
-                    type="text"
-                    value={healthData.tag_number}
-                    onChange={(e) => setHealthData({...healthData, tag_number: e.target.value})}
-                    className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Tag no."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">📝 Name</label>
-                  <input
-                    type="text"
-                    value={selectedAnimal.name}
-                    className="w-full p-2 text-sm border border-gray-200 rounded-lg bg-gray-50"
-                    disabled
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🧬 Species</label>
-                  <input
-                    type="text"
-                    value={selectedAnimal.species}
-                    className="w-full p-2 text-sm border border-gray-200 rounded-lg bg-gray-50"
-                    disabled
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">📅 Age</label>
-                  <input
-                    type="text"
-                    value={`${selectedAnimal.age || '?'} years`}
-                    className="w-full p-2 text-sm border border-gray-200 rounded-lg bg-gray-50"
-                    disabled
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">♂️♀️ Sex</label>
-                  <select
-                    value={healthData.sex}
-                    onChange={(e) => setHealthData({...healthData, sex: e.target.value})}
-                    className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="">Select sex</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">⚖️ Weight (kg)</label>
-                  <input
-                    type="number"
-                    value={healthData.weight}
-                    onChange={(e) => setHealthData({...healthData, weight: e.target.value})}
-                    className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Weight in kg"
-                  />
-                </div>
+          <form onSubmit={handleHealthRecord} className="p-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">🏷️ Animal ID</label>
+                <input
+                  type="text"
+                  value={healthData.tag_number}
+                  onChange={(e) => setHealthData({...healthData, tag_number: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="Animal ID"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">📝 Name</label>
+                <input
+                  type="text"
+                  value={selectedAnimal.name}
+                  className="w-full p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50"
+                  disabled
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">♂️♀️ Sex</label>
+                <select
+                  value={healthData.sex}
+                  onChange={(e) => setHealthData({...healthData, sex: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">📅 Age</label>
+                <input
+                  type="text"
+                  value={`${selectedAnimal.age || '?'} yrs`}
+                  className="w-full p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50"
+                  disabled
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">⚖️ Weight (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={healthData.weight}
+                  onChange={(e) => setHealthData({...healthData, weight: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="kg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">📈 Growth Stage</label>
+                <select
+                  value={healthData.growth_stage}
+                  onChange={(e) => setHealthData({...healthData, growth_stage: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select</option>
+                  <option value="Newborn">Newborn</option>
+                  <option value="Young">Young</option>
+                  <option value="Adult">Adult</option>
+                  <option value="Senior">Senior</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">🌡️ Temperature (°C)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={healthData.temperature}
+                  onChange={(e) => setHealthData({...healthData, temperature: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="°C"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">📅 Last Vaccination</label>
+                <input
+                  type="date"
+                  value={healthData.last_vaccination_date}
+                  onChange={(e) => setHealthData({...healthData, last_vaccination_date: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">💉 Vaccination Record</label>
+                <textarea
+                  value={healthData.vaccination_record}
+                  onChange={(e) => setHealthData({...healthData, vaccination_record: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  rows="3"
+                  placeholder="Vaccines given"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">🏥 Past Illnesses</label>
+                <textarea
+                  value={healthData.past_illness}
+                  onChange={(e) => setHealthData({...healthData, past_illness: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  rows="3"
+                  placeholder="Previous diseases"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">💊 Medication History</label>
+                <textarea
+                  value={healthData.medication}
+                  onChange={(e) => setHealthData({...healthData, medication: e.target.value})}
+                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  rows="3"
+                  placeholder="Medicine history"
+                />
               </div>
             </div>
 
-            {/* Vaccination & Medical History */}
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                💉 Vaccination & Medical History
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">💉 Last Vaccination Date</label>
-                  <input
-                    type="date"
-                    value={healthData.last_vaccination_date}
-                    onChange={(e) => setHealthData({...healthData, last_vaccination_date: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">📅 Next Vaccination Due</label>
-                  <input
-                    type="date"
-                    value={healthData.next_vaccination_due}
-                    onChange={(e) => setHealthData({...healthData, next_vaccination_due: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">✅ Vaccination Status</label>
-                  <select
-                    value={healthData.vaccination_status}
-                    onChange={(e) => setHealthData({...healthData, vaccination_status: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="Up to date">Up to date</option>
-                    <option value="Overdue">Overdue</option>
-                    <option value="Partial">Partial</option>
-                    <option value="Not started">Not started</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">💉 Vaccination Record</label>
-                  <textarea
-                    value={healthData.vaccination_record}
-                    onChange={(e) => setHealthData({...healthData, vaccination_record: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    rows="2"
-                    placeholder="Types of vaccines given, batch numbers"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🏥 Past Illness</label>
-                  <textarea
-                    value={healthData.past_illness}
-                    onChange={(e) => setHealthData({...healthData, past_illness: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    rows="2"
-                    placeholder="Previous diseases or conditions"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">💊 Last Medication Date</label>
-                  <input
-                    type="date"
-                    value={healthData.last_medication_date}
-                    onChange={(e) => setHealthData({...healthData, last_medication_date: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">💊 Medication Details</label>
-                  <textarea
-                    value={healthData.medication}
-                    onChange={(e) => setHealthData({...healthData, medication: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    rows="2"
-                    placeholder="Medicine name, dosage, reason"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Feeding & Care */}
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                🍽️ Feeding & Daily Care
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🕰️ Last Feeding Time</label>
-                  <input
-                    type="datetime-local"
-                    value={healthData.last_feeding_time}
-                    onChange={(e) => setHealthData({...healthData, last_feeding_time: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🍽️ Feeding Schedule</label>
-                  <textarea
-                    value={healthData.feeding_schedule}
-                    onChange={(e) => setHealthData({...healthData, feeding_schedule: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    rows="2"
-                    placeholder="Daily feeding times and portions"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">📝 Special Notes</label>
-                  <textarea
-                    value={healthData.special_notes}
-                    onChange={(e) => setHealthData({...healthData, special_notes: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    rows="2"
-                    placeholder="Any special care instructions or observations"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Breeding Information */}
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                🐷 Breeding Information
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🐷 Breeding Status</label>
-                  <select
-                    value={healthData.breeding_status}
-                    onChange={(e) => setHealthData({...healthData, breeding_status: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select status</option>
-                    <option value="Not breeding">Not breeding</option>
-                    <option value="Ready for breeding">Ready for breeding</option>
-                    <option value="Bred">Bred</option>
-                    <option value="Pregnant">Pregnant</option>
-                    <option value="Nursing">Nursing</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🤰 Pregnancy Status</label>
-                  <input
-                    type="text"
-                    value={healthData.pregnancy_status}
-                    onChange={(e) => setHealthData({...healthData, pregnancy_status: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    placeholder="Due date, weeks pregnant, etc."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Poultry-Specific Sections */}
-            {selectedAnimal && selectedAnimal.species === 'Chicken' && (
-              <>
-                {/* Flock Information */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    🐔 Flock Information
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🏷️ Flock ID</label>
-                      <input
-                        type="text"
-                        value={healthData.flock_id}
-                        onChange={(e) => setHealthData({...healthData, flock_id: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Flock identifier"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">📦 Batch Number</label>
-                      <input
-                        type="text"
-                        value={healthData.batch_number}
-                        onChange={(e) => setHealthData({...healthData, batch_number: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Batch number"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🐔 Flock Size</label>
-                      <input
-                        type="number"
-                        value={healthData.flock_size}
-                        onChange={(e) => setHealthData({...healthData, flock_size: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Number of birds"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Performance Metrics */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    📊 Performance Metrics
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">💀 Mortality Rate (%)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={healthData.mortality_rate}
-                        onChange={(e) => setHealthData({...healthData, mortality_rate: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Daily mortality %"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🌾 Feed Conversion Ratio</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={healthData.feed_conversion_ratio}
-                        onChange={(e) => setHealthData({...healthData, feed_conversion_ratio: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="FCR"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">💧 Water Intake (ml/day)</label>
-                      <input
-                        type="number"
-                        value={healthData.water_intake_ml}
-                        onChange={(e) => setHealthData({...healthData, water_intake_ml: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="ml per bird per day"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">📈 Growth Rate</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={healthData.growth_rate}
-                        onChange={(e) => setHealthData({...healthData, growth_rate: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="g/day"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Health Observations */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    🔍 Health Observations
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">💩 Droppings Condition</label>
-                      <select
-                        value={healthData.droppings_condition}
-                        onChange={(e) => setHealthData({...healthData, droppings_condition: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="">Select condition</option>
-                        <option value="Normal">Normal</option>
-                        <option value="Watery">Watery</option>
-                        <option value="Bloody">Bloody</option>
-                        <option value="Loose">Loose</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🪶 Feather Condition</label>
-                      <input
-                        type="text"
-                        value={healthData.feather_condition}
-                        onChange={(e) => setHealthData({...healthData, feather_condition: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Parasites, pecking wounds, etc."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🫁 Respiratory Signs</label>
-                      <input
-                        type="text"
-                        value={healthData.respiratory_signs}
-                        onChange={(e) => setHealthData({...healthData, respiratory_signs: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Coughing, sneezing, discharge"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Production Parameters */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    🥚 Production Parameters
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🥚 Egg Production Rate (%)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={healthData.egg_production_rate}
-                        onChange={(e) => setHealthData({...healthData, egg_production_rate: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Hen-day production %"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">⚖️ Egg Weight (g)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={healthData.egg_weight}
-                        onChange={(e) => setHealthData({...healthData, egg_weight: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Average egg weight"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🐚 Shell Quality</label>
-                      <select
-                        value={healthData.shell_quality}
-                        onChange={(e) => setHealthData({...healthData, shell_quality: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="">Select quality</option>
-                        <option value="Excellent">Excellent</option>
-                        <option value="Good">Good</option>
-                        <option value="Fair">Fair</option>
-                        <option value="Poor">Poor</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Environmental Conditions */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    🏠 Environmental Conditions
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🏠 Housing Type</label>
-                      <select
-                        value={healthData.housing_type}
-                        onChange={(e) => setHealthData({...healthData, housing_type: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="">Select housing</option>
-                        <option value="Deep litter">Deep litter</option>
-                        <option value="Cage">Cage</option>
-                        <option value="Free range">Free range</option>
-                        <option value="Semi-intensive">Semi-intensive</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">📏 Stocking Density</label>
-                      <input
-                        type="number"
-                        value={healthData.stocking_density}
-                        onChange={(e) => setHealthData({...healthData, stocking_density: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Birds per sq ft"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🌡️ Temperature (°C)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={healthData.temperature_celsius}
-                        onChange={(e) => setHealthData({...healthData, temperature_celsius: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Temperature"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">💧 Humidity (%)</label>
-                      <input
-                        type="number"
-                        value={healthData.humidity_percent}
-                        onChange={(e) => setHealthData({...healthData, humidity_percent: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Humidity %"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">🌬️ Ventilation Status</label>
-                      <select
-                        value={healthData.ventilation_status}
-                        onChange={(e) => setHealthData({...healthData, ventilation_status: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="">Select status</option>
-                        <option value="Excellent">Excellent</option>
-                        <option value="Good">Good</option>
-                        <option value="Fair">Fair</option>
-                        <option value="Poor">Poor</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">💡 Lighting Schedule</label>
-                      <input
-                        type="text"
-                        value={healthData.lighting_schedule}
-                        onChange={(e) => setHealthData({...healthData, lighting_schedule: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="e.g., 16L:8D (16 hours light, 8 hours dark)"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="flex space-x-4 pt-6 border-t border-gray-200 mt-8">
+            <div className="flex space-x-4 pt-5 border-t border-gray-200 mt-5">
               <button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300"

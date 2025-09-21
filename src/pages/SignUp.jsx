@@ -41,6 +41,8 @@ export default function SignUp() {
   const handleSignUp = async (e) => {
     e.preventDefault()
     try {
+      console.log('Attempting signup with:', { email: formData.email, role: selectedRole.id })
+      
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -52,19 +54,28 @@ export default function SignUp() {
         }
       })
       
+      console.log('Signup response:', { data, error })
+      console.log('User object:', data?.user)
+      console.log('User ID:', data?.user?.id)
+      console.log('User metadata:', data?.user?.user_metadata)
+      
       if (error) {
-        if (error.message.includes('already registered') || error.message.includes('email already exists')) {
-          alert('User already exists with a different role')
-        } else {
-          alert('Signup failed: ' + error.message)
-        }
+        console.error('Signup error:', error)
+        alert('Signup failed: ' + error.message)
         return
       }
       
-      alert('Account created successfully! You can now login.')
+      if (data?.user?.id) {
+        alert('Account created successfully! User ID: ' + data.user.id)
+      } else {
+        alert('Account creation response received but no user ID found')
+      }
+      console.log('User created:', data.user)
+      
       window.history.pushState({}, '', '/')
-      window.location.reload()
+      window.dispatchEvent(new PopStateEvent('popstate'))
     } catch (error) {
+      console.error('Signup error:', error)
       alert('Signup error: ' + error.message)
     }
   }
@@ -145,9 +156,15 @@ export default function SignUp() {
               </form>
               
               <div className="mt-4 text-center">
-                <a href="/" className="text-blue-600 hover:text-blue-800 text-sm">
+                <button 
+                  onClick={() => {
+                    window.history.pushState({}, '', '/')
+                    window.dispatchEvent(new PopStateEvent('popstate'))
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
                   Already have an account? Sign In
-                </a>
+                </button>
               </div>
               
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -211,7 +228,15 @@ export default function SignUp() {
         <div className="mt-12 text-center">
           <div className="card p-6 inline-block hover-glow">
             <p className="text-neutral-600 text-sm mb-2">Already have an account?</p>
-            <a href="/" className="text-blue-600 font-semibold hover:text-blue-800">Sign In Here</a>
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              className="text-blue-600 font-semibold hover:text-blue-800"
+            >
+              Sign In Here
+            </button>
           </div>
         </div>
       </div>

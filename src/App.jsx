@@ -33,18 +33,30 @@ export default function App() {
 
   useEffect(() => {
     // Check URL for routing
-    const path = window.location.pathname
-    if (path === '/signup') {
-      setCurrentPage('signup')
-    } else {
-      setCurrentPage('auth')
+    const checkRoute = () => {
+      const path = window.location.pathname
+      if (path === '/signup') {
+        setCurrentPage('signup')
+      } else {
+        setCurrentPage('auth')
+      }
     }
+    
+    checkRoute()
+    
+    // Listen for popstate events
+    window.addEventListener('popstate', checkRoute)
 
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user)
         setIsAuthenticated(true)
+        // Set user role from metadata
+        const userRole = session.user?.user_metadata?.role
+        if (userRole) {
+          localStorage.setItem('userRole', userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole)
+        }
         // Update URL to root when authenticated
         if (window.location.pathname !== '/') {
           window.history.pushState({}, '', '/')
@@ -57,16 +69,37 @@ export default function App() {
       if (session) {
         setUser(session.user)
         setIsAuthenticated(true)
+        // Set user role from metadata
+        const userRole = session.user?.user_metadata?.role
+        if (userRole) {
+          localStorage.setItem('userRole', userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole)
+        }
         // Update URL to root when authenticated
         window.history.pushState({}, '', '/')
       } else {
         setUser(null)
         setIsAuthenticated(false)
         setCurrentPage('auth')
+        localStorage.removeItem('userRole')
       }
     })
 
-    return () => subscription.unsubscribe()
+    // Listen for hash changes to switch sections
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1)
+      if (hash && pages[hash]) {
+        setActiveSection(hash)
+      }
+    }
+    
+    window.addEventListener('hashchange', handleHashChange)
+    handleHashChange() // Check initial hash
+
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('popstate', checkRoute)
+    }
   }, [])
 
   if (!isAuthenticated) {

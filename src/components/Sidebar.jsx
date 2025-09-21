@@ -5,67 +5,159 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-const menuItems = [
-  { 
-    id: 'dashboard', 
-    label: 'Dashboard', 
-    icon: LayoutDashboard,
-    color: 'blue',
-    subItems: ['Farm Overview', 'Analytics', 'Quick Actions']
-  },
-  { 
-    id: 'consultation', 
-    label: 'Health & Consultation', 
-    icon: Stethoscope,
-    color: 'emerald',
-    subItems: ['Video Calls', 'Chat Support', 'Disease Analyzer', 'Maternity Care']
-  },
-  { 
-    id: 'lab', 
-    label: 'Lab & Diagnostics', 
-    icon: FlaskConical,
-    color: 'purple',
-    subItems: ['Sample Pickup', 'Test Results', 'Lab Management', 'Reports']
-  },
-  { 
-    id: 'emergency', 
-    label: 'Emergency Services', 
-    icon: Truck,
-    color: 'red',
-    subItems: ['Animal Ambulance', 'Emergency Contacts', 'Biosecurity']
-  },
-  { 
-    id: 'education', 
-    label: 'Education Hub', 
-    icon: GraduationCap,
-    color: 'amber',
-    subItems: ['Learning Resources', 'Policy Updates', 'Community Forum']
-  },
-  { 
-    id: 'alerts', 
-    label: 'Risk & Alerts', 
-    icon: AlertTriangle,
-    color: 'orange',
-    subItems: ['Weather Updates', 'Disease Alerts', 'Regional Risks']
-  },
-  { 
-    id: 'pharmacy', 
-    label: 'Pharmacy', 
-    icon: Pill,
-    color: 'teal',
-    subItems: ['Medicine Orders', 'Prescriptions', 'Inventory']
-  },
-  { 
-    id: 'records', 
-    label: 'Records Management', 
-    icon: ClipboardList,
-    color: 'indigo',
-    subItems: ['Animal Records', 'Vaccination Schedule', 'Documents']
-  },
-]
+const allMenuItems = {
+  farmer: [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: LayoutDashboard,
+      color: 'blue',
+      subItems: ['Overview & Quick Stats']
+    },
+    { 
+      id: 'consultation', 
+      label: 'Health Consultation', 
+      icon: Stethoscope,
+      color: 'emerald',
+      subItems: ['Vet Connect', 'Telemedicine']
+    },
+    { 
+      id: 'records', 
+      label: 'Record Management', 
+      icon: ClipboardList,
+      color: 'indigo',
+      subItems: ['Animal Records & Reports']
+    },
+    { 
+      id: 'lab', 
+      label: 'Lab & Diagnostics', 
+      icon: FlaskConical,
+      color: 'purple',
+      subItems: ['Test Reports', 'Lab Data']
+    },
+    { 
+      id: 'alerts', 
+      label: 'Risk & Alerts', 
+      icon: AlertTriangle,
+      color: 'orange',
+      subItems: ['Disease Alerts', 'Abnormal Vitals']
+    },
+    { 
+      id: 'education', 
+      label: 'Education Hub', 
+      icon: GraduationCap,
+      color: 'amber',
+      subItems: ['Guides', 'Tutorials', 'Awareness']
+    },
+    { 
+      id: 'pharmacy', 
+      label: 'Pharmacy', 
+      icon: Pill,
+      color: 'teal',
+      subItems: ['Medicines', 'Vaccines', 'Supplies']
+    },
+    { 
+      id: 'emergency', 
+      label: 'Emergency Services', 
+      icon: Truck,
+      color: 'red',
+      subItems: ['Quick Help & SOS']
+    },
+  ],
+  veterinarian: [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: LayoutDashboard,
+      color: 'blue',
+      subItems: ['Overview & Quick Stats']
+    },
+    { 
+      id: 'consultation', 
+      label: 'Health Consultation', 
+      icon: Stethoscope,
+      color: 'emerald',
+      subItems: ['Vet Connect', 'Telemedicine']
+    },
+    { 
+      id: 'education', 
+      label: 'Education Hub', 
+      icon: GraduationCap,
+      color: 'amber',
+      subItems: ['Guides', 'Tutorials', 'Awareness']
+    },
+  ],
+  volunteer: [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: LayoutDashboard,
+      color: 'blue',
+      subItems: ['Overview & Quick Stats']
+    },
+    { 
+      id: 'lab', 
+      label: 'Lab & Diagnostics', 
+      icon: FlaskConical,
+      color: 'purple',
+      subItems: ['Test Reports', 'Lab Data']
+    },
+    { 
+      id: 'education', 
+      label: 'Education Hub', 
+      icon: GraduationCap,
+      color: 'amber',
+      subItems: ['Guides', 'Tutorials', 'Awareness']
+    },
+  ],
+  lab: [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: LayoutDashboard,
+      color: 'blue',
+      subItems: ['Overview & Quick Stats']
+    },
+    { 
+      id: 'lab', 
+      label: 'Lab & Diagnostics', 
+      icon: FlaskConical,
+      color: 'purple',
+      subItems: ['Test Reports', 'Lab Data']
+    },
+  ],
+  dispatcher: [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: LayoutDashboard,
+      color: 'blue',
+      subItems: ['Overview & Quick Stats']
+    },
+    { 
+      id: 'pharmacy', 
+      label: 'Pharmacy', 
+      icon: Pill,
+      color: 'teal',
+      subItems: ['Medicines', 'Vaccines', 'Supplies']
+    },
+    { 
+      id: 'emergency', 
+      label: 'Emergency Services', 
+      icon: Truck,
+      color: 'red',
+      subItems: ['Quick Help & SOS']
+    },
+  ]
+}
 
 export default function Sidebar({ activeSection, setActiveSection, isOpen, setIsOpen, user }) {
   const [expandedItems, setExpandedItems] = useState({})
+  
+  // Get user role from localStorage or user metadata
+  const userRole = localStorage.getItem('userRole') || user?.user_metadata?.role || 'farmer'
+  const normalizedRole = userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole
+  const menuItems = allMenuItems[normalizedRole] || allMenuItems.farmer
 
   const toggleExpanded = (itemId) => {
     setExpandedItems(prev => {
@@ -142,8 +234,8 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
             </div>
             {isOpen && (
               <div className="flex-1">
-                <p className="text-sm font-semibold text-neutral-800">{user?.username || 'User'}</p>
-                <p className="text-xs text-blue-600 capitalize">{user?.role || 'Role'}</p>
+                <p className="text-sm font-semibold text-neutral-800">{user?.user_metadata?.name || 'User'}</p>
+                <p className="text-xs text-blue-600 capitalize">{normalizedRole === 'veterinarian' ? 'Veterinarian' : normalizedRole === 'lab' ? 'Lab Technician' : normalizedRole}</p>
               </div>
             )}
           </div>

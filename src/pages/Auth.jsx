@@ -66,7 +66,9 @@ export default function Auth() {
         return
       }
       
-      localStorage.setItem('userRole', selectedRole)
+      // Set the correct role in localStorage
+      localStorage.setItem('userRole', normalizedUserRole)
+      console.log('Login successful, role set to:', normalizedUserRole)
     } catch (error) {
       alert(isHindi ? 'लॉगिन त्रुटि: ' + error.message : 'Login error: ' + error.message)
     }
@@ -170,10 +172,16 @@ export default function Auth() {
           {/* Footer Section */}
           <div className="px-6 pb-4 border-t border-gray-100 pt-3 space-y-2 bg-gray-50">
             <div className="text-center">
-              <a href="/signup" className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium">
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/signup')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                }}
+                className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
                 <span>👤</span>
                 <span>{isHindi ? 'नया उपयोगकर्ता? साइन अप करें' : 'New user? Sign up'}</span>
-              </a>
+              </button>
             </div>
             <div className="text-center">
               <button
