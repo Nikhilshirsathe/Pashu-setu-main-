@@ -5,15 +5,99 @@ import { supabase } from '../lib/supabase'
 export default function Dashboard() {
   const [stats, setStats] = useState([])
   const [userRole, setUserRole] = useState('farmer')
-  
   const [activities, setActivities] = useState([])
+  const [weather, setWeather] = useState(null)
+  const [location, setLocation] = useState('Pune, Maharashtra')
 
   useEffect(() => {
     const role = localStorage.getItem('userRole') || 'farmer'
     const normalizedRole = role === 'doctor' ? 'veterinarian' : role === 'lab_employee' ? 'lab' : role
     setUserRole(normalizedRole)
     fetchDashboardData(normalizedRole)
+    fetchWeatherData()
   }, [])
+
+  const fetchWeatherData = async () => {
+    try {
+      // Get user's location first
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const { latitude, longitude } = position.coords
+          await getWeatherByCoords(latitude, longitude)
+        }, () => {
+          // Fallback to default location if geolocation fails
+          getWeatherByCity('Pune')
+        })
+      } else {
+        getWeatherByCity('Pune')
+      }
+    } catch (error) {
+      console.error('Error fetching weather:', error)
+    }
+  }
+
+  const getWeatherByCoords = async (lat, lon) => {
+    try {
+      const API_KEY = 'f3348345e448453ea29181418251209'
+      const response = await fetch(
+        `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${lat},${lon}&aqi=no`
+      )
+      const data = await response.json()
+      
+      if (response.ok) {
+        setWeather({
+          temp: Math.round(data.current.temp_c),
+          description: data.current.condition.text,
+          humidity: data.current.humidity,
+          windSpeed: Math.round(data.current.wind_kph),
+          icon: getWeatherIcon(data.current.condition.text),
+          uvIndex: data.current.uv,
+          visibility: Math.round(data.current.vis_km)
+        })
+        setLocation(`${data.location.name}, ${data.location.country}`)
+      }
+    } catch (error) {
+      console.error('Error fetching weather by coords:', error)
+      getWeatherByCity('Pune')
+    }
+  }
+
+  const getWeatherByCity = async (city) => {
+    try {
+      const API_KEY = 'f3348345e448453ea29181418251209'
+      const response = await fetch(
+        `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${city}&aqi=no`
+      )
+      const data = await response.json()
+      
+      if (response.ok) {
+        setWeather({
+          temp: Math.round(data.current.temp_c),
+          description: data.current.condition.text,
+          humidity: data.current.humidity,
+          windSpeed: Math.round(data.current.wind_kph),
+          icon: getWeatherIcon(data.current.condition.text),
+          uvIndex: data.current.uv,
+          visibility: Math.round(data.current.vis_km)
+        })
+        setLocation(`${data.location.name}, ${data.location.country}`)
+      }
+    } catch (error) {
+      console.error('Error fetching weather by city:', error)
+    }
+  }
+
+  const getWeatherIcon = (condition) => {
+    const text = condition.toLowerCase()
+    if (text.includes('sunny') || text.includes('clear')) return '☀️'
+    if (text.includes('cloud')) return '☁️'
+    if (text.includes('rain')) return '🌧️'
+    if (text.includes('drizzle')) return '🌦️'
+    if (text.includes('thunder')) return '⛈️'
+    if (text.includes('snow')) return '❄️'
+    if (text.includes('mist') || text.includes('fog')) return '🌫️'
+    return '☀️'
+  }
 
   const fetchDashboardData = async (role) => {
     try {
@@ -352,7 +436,7 @@ export default function Dashboard() {
           <div className="card px-4 py-2 hover:shadow-lg transition-all duration-200">
             <div className="flex items-center space-x-2">
               <MapPin className="w-4 h-4 text-neutral-500" />
-              <span className="text-sm text-neutral-600">Pune, Maharashtra</span>
+              <span className="text-sm text-neutral-600">{location}</span>
             </div>
           </div>
           <button 
@@ -531,17 +615,17 @@ export default function Dashboard() {
               <>
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl border border-yellow-200">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="text-3xl">☀️</div>
+                    <div className="text-3xl">{weather?.icon || '☀️'}</div>
                     <div>
-                      <p className="text-gray-800 font-semibold text-lg">28°C</p>
-                      <p className="text-sm text-gray-600">Sunny & Clear</p>
+                      <p className="text-gray-800 font-semibold text-lg">{weather?.temp || 28}°C</p>
+                      <p className="text-sm text-gray-600 capitalize">{weather?.description || 'Sunny & Clear'}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <div>Humidity: 65%</div>
-                    <div>Wind: 12 km/h</div>
-                    <div>UV Index: 7</div>
-                    <div>Visibility: 10km</div>
+                    <div>Humidity: {weather?.humidity || 65}%</div>
+                    <div>Wind: {weather?.windSpeed || 12} km/h</div>
+                    <div>UV Index: {weather?.uvIndex || 7}</div>
+                    <div>Visibility: {weather?.visibility || 10}km</div>
                   </div>
                 </div>
                 
@@ -551,7 +635,12 @@ export default function Dashboard() {
                     <div>
                       <p className="text-gray-800 font-medium text-sm">Disease Alert</p>
                       <p className="text-xs text-gray-600 mt-1">Foot & Mouth Disease reported 15km away. Implement biosecurity measures.</p>
-                      <button className="text-xs text-red-600 font-medium mt-2 hover:underline">View Details →</button>
+                      <button 
+                        onClick={() => window.location.hash = '#alerts'}
+                        className="text-xs text-red-600 font-medium mt-2 hover:underline"
+                      >
+                        View Details →
+                      </button>
                     </div>
                   </div>
                 </div>

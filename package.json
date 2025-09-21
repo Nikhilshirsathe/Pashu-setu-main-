@@ -1,6 +1,7 @@
 {
   "name": "pashu-setu",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -24,5 +25,10 @@
   },
   "engines": {
     "node": "22.x"
-  }
+  },
+  "description": "A modern React application for comprehensive animal healthcare management with role-based access for farmers, veterinarians, volunteers, and lab employees.",
+  "main": "postcss.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
