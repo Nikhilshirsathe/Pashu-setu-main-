@@ -40,14 +40,14 @@ const allMenuItems = {
       label: 'Risk & Alerts', 
       icon: AlertTriangle,
       color: 'orange',
-      subItems: ['Disease Alerts', 'Abnormal Vitals']
+      subItems: ['Weather Display', 'Regional Alerts']
     },
     { 
       id: 'education', 
       label: 'Education Hub', 
       icon: GraduationCap,
       color: 'amber',
-      subItems: ['Guides', 'Tutorials', 'Awareness']
+      subItems: ['Educational Resources', 'Government Policies', 'Community Platform']
     },
     { 
       id: 'pharmacy', 
@@ -84,7 +84,7 @@ const allMenuItems = {
       label: 'Education Hub', 
       icon: GraduationCap,
       color: 'amber',
-      subItems: ['Guides', 'Tutorials', 'Awareness']
+      subItems: ['Educational Resources', 'Government Policies', 'Community Platform']
     },
   ],
   volunteer: [
@@ -107,7 +107,7 @@ const allMenuItems = {
       label: 'Education Hub', 
       icon: GraduationCap,
       color: 'amber',
-      subItems: ['Guides', 'Tutorials', 'Awareness']
+      subItems: ['Educational Resources', 'Government Policies', 'Community Platform']
     },
   ],
   lab: [
@@ -215,7 +215,24 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
                 {isExpanded && (
                   <div className="mt-2 ml-4 space-y-1">
                     {item.subItems.map((subItem, index) => (
-                      <div key={index} className="flex items-center space-x-3 px-4 py-2 text-xs text-neutral-600 hover:text-green-700 cursor-pointer transition-all duration-200 hover:bg-green-50/50 rounded-lg hover:transform hover:translate-x-1 hover:shadow-sm">
+                      <div 
+                        key={index} 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveSection(item.id)
+                          if (item.id === 'education') {
+                            const tabMap = {
+                              'Educational Resources': 'resources',
+                              'Government Policies': 'policies', 
+                              'Community Platform': 'community'
+                            }
+                            localStorage.setItem('educationTab', tabMap[subItem] || 'resources')
+                            window.dispatchEvent(new Event('educationTabChange'))
+                          }
+                          if (window.innerWidth < 1024) setIsOpen(false)
+                        }}
+                        className="flex items-center space-x-3 px-4 py-2 text-xs text-neutral-600 hover:text-green-700 cursor-pointer transition-all duration-200 hover:bg-green-50/50 rounded-lg hover:transform hover:translate-x-1 hover:shadow-sm"
+                      >
                         <div className="w-2 h-2 bg-neutral-400 rounded-full hover:bg-green-500 transition-colors"></div>
                         <span>{subItem}</span>
                       </div>
