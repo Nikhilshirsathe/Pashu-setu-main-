@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CloudSun, MapPin, Thermometer, Droplets, Wind, Eye, Sun } from 'lucide-react'
+import { CloudSun, MapPin, Thermometer, Droplets, Wind, Eye } from 'lucide-react'
 
 export default function Alerts() {
   const [weather, setWeather] = useState(null)
@@ -96,38 +96,116 @@ export default function Alerts() {
     return '☀️'
   }
 
-  const alerts = [
-    {
-      id: 1,
-      type: 'Disease Alert',
-      severity: 'High',
-      title: 'Foot & Mouth Disease Outbreak',
-      description: 'FMD cases reported 15km from your location. Implement immediate biosecurity measures.',
-      location: '15km Northeast',
-      time: '2 hours ago',
-      color: 'bg-red-500'
-    },
-    {
-      id: 2,
-      type: 'Weather Warning',
-      severity: 'Medium',
-      title: 'Heavy Rain Expected',
-      description: 'Monsoon rains expected in next 48 hours. Secure livestock and feed storage.',
-      location: 'Regional',
-      time: '6 hours ago',
-      color: 'bg-orange-500'
-    },
-    {
-      id: 3,
+  const [alerts, setAlerts] = useState([])
+
+  const generateAlerts = (weatherData, locationName) => {
+    const generatedAlerts = []
+    
+    // Weather-based alerts
+    if (weatherData) {
+      if (weatherData.temp > 35) {
+        generatedAlerts.push({
+          id: 'heat-' + Date.now(),
+          type: 'Heat Warning',
+          severity: 'High',
+          title: 'Extreme Heat Alert',
+          description: `Temperature ${weatherData.temp}°C. Ensure adequate water supply and shade for livestock.`,
+          location: locationName,
+          time: 'Now',
+          color: 'bg-red-500'
+        })
+      }
+      
+      if (weatherData.humidity > 80) {
+        generatedAlerts.push({
+          id: 'humidity-' + Date.now(),
+          type: 'Humidity Alert',
+          severity: 'Medium',
+          title: 'High Humidity Warning',
+          description: `Humidity ${weatherData.humidity}%. Monitor animals for heat stress and respiratory issues.`,
+          location: locationName,
+          time: 'Now',
+          color: 'bg-orange-500'
+        })
+      }
+      
+      if (weatherData.windSpeed > 25) {
+        generatedAlerts.push({
+          id: 'wind-' + Date.now(),
+          type: 'Wind Warning',
+          severity: 'Medium',
+          title: 'Strong Wind Alert',
+          description: `Wind speed ${weatherData.windSpeed} km/h. Secure loose structures and shelter animals.`,
+          location: locationName,
+          time: 'Now',
+          color: 'bg-yellow-500'
+        })
+      }
+      
+      if (weatherData.visibility < 5) {
+        generatedAlerts.push({
+          id: 'visibility-' + Date.now(),
+          type: 'Visibility Warning',
+          severity: 'Medium',
+          title: 'Poor Visibility Alert',
+          description: `Visibility ${weatherData.visibility}km. Exercise caution during outdoor activities.`,
+          location: locationName,
+          time: 'Now',
+          color: 'bg-gray-500'
+        })
+      }
+    }
+    
+    // Regional disease alerts (simulated based on location)
+    const diseaseRisk = Math.random()
+    if (diseaseRisk > 0.7) {
+      generatedAlerts.push({
+        id: 'disease-' + Date.now(),
+        type: 'Disease Alert',
+        severity: 'High',
+        title: 'Foot & Mouth Disease Risk',
+        description: 'FMD cases reported in neighboring areas. Implement biosecurity measures.',
+        location: '25km radius',
+        time: '3 hours ago',
+        color: 'bg-red-500'
+      })
+    }
+    
+    // Vaccination reminders
+    generatedAlerts.push({
+      id: 'vaccination-' + Date.now(),
       type: 'Vaccination Reminder',
       severity: 'Low',
-      title: 'Annual Vaccination Drive',
-      description: 'Government vaccination program starts next week. Register your animals.',
+      title: 'Seasonal Vaccination Due',
+      description: 'Annual vaccination program available. Schedule appointments for your livestock.',
       location: 'District Wide',
       time: '1 day ago',
       color: 'bg-blue-500'
+    })
+    
+    // Market price alerts
+    if (Math.random() > 0.5) {
+      generatedAlerts.push({
+        id: 'market-' + Date.now(),
+        type: 'Market Alert',
+        severity: 'Low',
+        title: 'Livestock Price Update',
+        description: 'Cattle prices increased by 8% this week. Good time for selling mature livestock.',
+        location: 'Regional Markets',
+        time: '12 hours ago',
+        color: 'bg-green-500'
+      })
     }
-  ]
+    
+    return generatedAlerts
+  }
+  
+  useEffect(() => {
+    if (weather && location) {
+      const newAlerts = generateAlerts(weather, location)
+      setAlerts(newAlerts)
+    }
+  }, [weather, location])
 
   return (
     <div className="space-y-6">
@@ -211,26 +289,51 @@ export default function Alerts() {
           </div>
           
           <div className="space-y-4">
-            {alerts.map((alert) => (
-              <div key={alert.id} className="border-l-4 border-l-red-500 bg-red-50 p-4 rounded-r-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${alert.color}`}>
-                        {alert.severity}
-                      </span>
-                      <span className="text-xs text-gray-500">{alert.type}</span>
-                    </div>
-                    <h4 className="font-semibold text-gray-800 mb-1">{alert.title}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span>{alert.location}</span>
-                      <span>{alert.time}</span>
+            {alerts.length > 0 ? alerts.map((alert) => {
+              const getBorderColor = (severity) => {
+                switch(severity) {
+                  case 'High': return 'border-l-red-500'
+                  case 'Medium': return 'border-l-orange-500'
+                  case 'Low': return 'border-l-blue-500'
+                  default: return 'border-l-gray-500'
+                }
+              }
+              
+              const getBgColor = (severity) => {
+                switch(severity) {
+                  case 'High': return 'bg-red-50'
+                  case 'Medium': return 'bg-orange-50'
+                  case 'Low': return 'bg-blue-50'
+                  default: return 'bg-gray-50'
+                }
+              }
+              
+              return (
+                <div key={alert.id} className={`border-l-4 ${getBorderColor(alert.severity)} ${getBgColor(alert.severity)} p-4 rounded-r-lg`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${alert.color}`}>
+                          {alert.severity}
+                        </span>
+                        <span className="text-xs text-gray-500">{alert.type}</span>
+                      </div>
+                      <h4 className="font-semibold text-gray-800 mb-1">{alert.title}</h4>
+                      <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>{alert.location}</span>
+                        <span>{alert.time}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+              )
+            }) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No active alerts for your region</p>
+                <p className="text-sm text-gray-500 mt-1">All systems normal</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

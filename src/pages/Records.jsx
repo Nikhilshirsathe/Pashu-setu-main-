@@ -1,4 +1,4 @@
-import { ClipboardList, FolderOpen, Plus, Edit, Trash2, Heart, Calendar, Syringe, Clock } from 'lucide-react'
+import { ClipboardList, FolderOpen, Plus, Edit, Trash2, Heart, Calendar, Syringe, Clock, Camera, Save, RotateCcw } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
@@ -8,10 +8,13 @@ export default function Records() {
   const [showHealthForm, setShowHealthForm] = useState(false)
   const [showAnimalReport, setShowAnimalReport] = useState(false)
   const [showVaccinationSchedule, setShowVaccinationSchedule] = useState(false)
+  const [activeTab, setActiveTab] = useState('profile')
+  const [editingAnimal, setEditingAnimal] = useState(null)
   const [vaccinationSchedule, setVaccinationSchedule] = useState([])
   const [selectedAnimal, setSelectedAnimal] = useState(null)
   const [animals, setAnimals] = useState([])
   const [animalHealthRecords, setAnimalHealthRecords] = useState([])
+  const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
     name: '',
     species: '',
@@ -37,19 +40,16 @@ export default function Records() {
     setUserRole(role)
     if (role === 'farmer') {
       fetchAnimals()
+    } else {
+      setLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    if (animals.length > 0) {
-      fetchAllHealthRecords()
-    }
-  }, [animals])
-
-  const fetchAllHealthRecords = async () => {
+  const fetchAllHealthRecords = async (animalList = animals) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const animalIds = animals.map(animal => animal.id)
+      if (animalList.length === 0) return
+      
+      const animalIds = animalList.map(animal => animal.id)
       
       const { data, error } = await supabase
         .from('health_records')
@@ -59,17 +59,17 @@ export default function Records() {
       
       if (error) throw error
       setAnimalHealthRecords(data || [])
-      generateVaccinationSchedule(data || [])
+      generateVaccinationSchedule(data || [], animalList)
     } catch (error) {
       console.error('Error fetching health records:', error)
     }
   }
 
-  const generateVaccinationSchedule = (healthRecords = animalHealthRecords) => {
+  const generateVaccinationSchedule = (healthRecords = animalHealthRecords, animalList = animals) => {
     const schedule = []
     const today = new Date()
     
-    animals.forEach(animal => {
+    animalList.forEach(animal => {
       // Get last vaccination from health records
       const lastVaccination = healthRecords
         .filter(record => record.animal_id === animal.id && record.last_vaccination_date)
@@ -111,6 +111,7 @@ export default function Records() {
 
   const fetchAnimals = async () => {
     try {
+      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       
       const { data, error } = await supabase
@@ -120,9 +121,17 @@ export default function Records() {
         .order('created_at', { ascending: false })
       
       if (error) throw error
+      
       setAnimals(data || [])
+      
+      // Fetch health records only if animals exist
+      if (data && data.length > 0) {
+        await fetchAllHealthRecords(data)
+      }
     } catch (error) {
       console.error('Error fetching animals:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -253,7 +262,9 @@ export default function Records() {
         setSelectedAnimal(null)
       }
       // Refresh vaccination schedule
-      fetchAllHealthRecords()
+      if (animals.length > 0) {
+        fetchAllHealthRecords()
+      }
     } catch (error) {
       alert('Error saving health record: ' + error.message)
     }
@@ -326,7 +337,7 @@ export default function Records() {
               e.preventDefault()
               setShowAddForm(!showAddForm)
             }}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+            className="bg-indigo-800 hover:bg-indigo-900 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors font-medium"
           >
             <Plus className="w-5 h-5" />
             <span>{showAddForm ? 'Cancel' : 'Add Animal'}</span>
@@ -405,88 +416,167 @@ export default function Records() {
 
       {/* Add Animal Form */}
       {showAddForm && (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Add New Animal</h3>
-          <form onSubmit={handleAddAnimal} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Animal Name</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter animal name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
-              <select
-                value={formData.species}
-                onChange={(e) => setFormData({...formData, species: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                required
-              >
-                <option value="">Select species</option>
-                <option value="Pig">🐷 Pig</option>
-                <option value="Chicken">🐔 Chicken (Poultry)</option>
-                <optgroup label="Other Animals">
-                  <option value="Cow">🐄 Cow</option>
-                  <option value="Buffalo">🐃 Buffalo</option>
-                  <option value="Goat">🐐 Goat</option>
-                  <option value="Sheep">🐑 Sheep</option>
-                  <option value="Duck">🦆 Duck</option>
-                  <option value="Turkey">🦃 Turkey</option>
-                  <option value="Horse">🐎 Horse</option>
-                </optgroup>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Breed</label>
-              <input
-                type="text"
-                value={formData.breed}
-                onChange={(e) => setFormData({...formData, breed: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter breed"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Age (years)</label>
-              <input
-                type="number"
-                value={formData.age}
-                onChange={(e) => setFormData({...formData, age: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter age"
-                min="0"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Animal Photo</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFormData({...formData, image: e.target.files[0]})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            <div className="md:col-span-2 flex space-x-4">
+        <div className="fixed inset-0 bg-gray-100 z-50 overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-indigo-800 to-purple-900 text-white p-4 shadow-lg">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold">🐾</span>
+                </div>
+                <h1 className="text-xl font-bold">Pashu Setu</h1>
+              </div>
               <button
-                type="submit"
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                Add Animal
-              </button>
-              <button
-                type="button"
                 onClick={() => setShowAddForm(false)}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
+                className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
               >
-                Cancel
+                <span className="text-lg">✕</span>
               </button>
             </div>
-          </form>
+          </div>
+
+          {/* Main Content */}
+          <div className="max-w-2xl mx-auto py-8 px-4">
+            {/* Title */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Add Animal Record</h2>
+              <p className="text-gray-600">Enter your farm animal details below</p>
+            </div>
+
+            {/* Form */}
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <form onSubmit={handleAddAnimal} className="space-y-6">
+                {/* Two-column grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Animal Name</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                      placeholder="Enter animal name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
+                    <input
+                      type="text"
+                      value={`REG-${Date.now().toString().slice(-6)}`}
+                      className="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+                      disabled
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
+                    <select
+                      value={formData.species}
+                      onChange={(e) => setFormData({...formData, species: e.target.value})}
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                      required
+                    >
+                      <option value="">Select species</option>
+                      <option value="Pig">🐷 Pig</option>
+                      <option value="Chicken">🐔 Chicken (Poultry)</option>
+                      <optgroup label="Other Animals">
+                        <option value="Cow">🐄 Cow</option>
+                        <option value="Buffalo">🐃 Buffalo</option>
+                        <option value="Goat">🐐 Goat</option>
+                        <option value="Sheep">🐑 Sheep</option>
+                        <option value="Duck">🦆 Duck</option>
+                        <option value="Turkey">🦃 Turkey</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Breed</label>
+                    <input
+                      type="text"
+                      value={formData.breed}
+                      onChange={(e) => setFormData({...formData, breed: e.target.value})}
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                      placeholder="Enter breed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                    <input
+                      type="date"
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Age (years)</label>
+                    <input
+                      type="number"
+                      value={formData.age}
+                      onChange={(e) => setFormData({...formData, age: e.target.value})}
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                      placeholder="Enter age"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                    <select className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                      <option value="">Select sex</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Health Status</label>
+                    <select className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                      <option value="Healthy">Healthy</option>
+                      <option value="Under Treatment">Under Treatment</option>
+                      <option value="Quarantine">Quarantine</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Full width fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Animal Photo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFormData({...formData, image: e.target.files[0]})}
+                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-center space-x-4 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({ name: '', species: '', breed: '', age: '', image: null })
+                    }}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg font-bold text-sm transition-colors"
+                  >
+                    Clear All Data
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-indigo-800 hover:bg-indigo-900 text-white px-8 py-4 rounded-lg font-bold text-sm transition-colors"
+                  >
+                    Save Record
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Bottom Decoration */}
+            <div className="flex justify-center items-center space-x-4 mt-8 py-4">
+              <span className="text-4xl">🐷</span>
+              <span className="text-4xl">🐔</span>
+              <span className="text-4xl">🐄</span>
+              <span className="text-4xl">🐐</span>
+              <span className="text-4xl">🐑</span>
+              <span className="text-4xl">🦆</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -496,25 +586,31 @@ export default function Records() {
           <h3 className="text-xl font-bold text-gray-800">Your Animals ({animals.length})</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Species</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Breed</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {animals.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+              <span className="ml-3 text-gray-600">Loading animals...</span>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                    No animals added yet. Click "Add Animal" to get started.
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Species</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Breed</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
-              ) : (
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {animals.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      No animals added yet. Click "Add Animal" to get started.
+                    </td>
+                  </tr>
+                ) : (
                 animals.map((animal) => (
                   <tr key={animal.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -557,9 +653,10 @@ export default function Records() {
                     </td>
                   </tr>
                 ))
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -733,17 +830,17 @@ export default function Records() {
 
       {/* Animal Report Section */}
       {showAnimalReport && selectedAnimal && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mt-6 animate-in slide-in-from-top-4 duration-500 fade-in">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mt-6">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 p-6 text-white">
+          <div className="bg-gradient-to-r from-indigo-800 to-purple-900 p-6 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
                   <span className="text-2xl">{selectedAnimal.species === 'Pig' ? '🐷' : selectedAnimal.species === 'Chicken' ? '🐔' : '🐄'}</span>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-1">📊 Animal Profile Report</h3>
-                  <p className="text-blue-100">Complete overview for {selectedAnimal.name}</p>
+                  <h3 className="text-2xl font-bold mb-1">{selectedAnimal.name}</h3>
+                  <p className="text-indigo-200">Animal Profile & Records</p>
                 </div>
               </div>
               <button
@@ -755,125 +852,205 @@ export default function Records() {
             </div>
           </div>
 
-            <div className="p-6">
-              {/* Basic Profile */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-2xl border border-gray-200">
-                  <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                    📝 Basic Information
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-2 hover:bg-white/50 rounded-lg transition-colors">
-                      <span className="font-medium text-gray-600">Name:</span>
-                      <span className="font-bold text-gray-800">{selectedAnimal.name}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 hover:bg-white/50 rounded-lg transition-colors">
-                      <span className="font-medium text-gray-600">Species:</span>
-                      <span className="font-bold text-gray-800">{selectedAnimal.species}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 hover:bg-white/50 rounded-lg transition-colors">
-                      <span className="font-medium text-gray-600">Breed:</span>
-                      <span className="font-bold text-gray-800">{selectedAnimal.breed || 'Not specified'}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 hover:bg-white/50 rounded-lg transition-colors">
-                      <span className="font-medium text-gray-600">Age:</span>
-                      <span className="font-bold text-gray-800">{selectedAnimal.age || 'Not specified'} years</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-2xl border border-green-200">
-                  <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                    💚 Health Status
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-xl">
-                      <div className={`w-4 h-4 rounded-full ${animalHealthRecords.length > 0 && animalHealthRecords[0].health_status === 'Healthy' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                      <span className="font-semibold text-green-800">{animalHealthRecords.length > 0 ? animalHealthRecords[0].health_status || 'Healthy' : 'No records'}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between p-2">
-                        <span className="text-green-700">Last Check:</span>
-                        <span className="font-bold text-green-800">{animalHealthRecords.length > 0 ? new Date(animalHealthRecords[0].created_at).toLocaleDateString() : 'No records'}</span>
-                      </div>
-                      <div className="flex justify-between p-2">
-                        <span className="text-green-700">Weight:</span>
-                        <span className="font-bold text-green-800">{animalHealthRecords.length > 0 && animalHealthRecords[0].weight ? `${animalHealthRecords[0].weight}kg` : 'Not recorded'}</span>
-                      </div>
-                      <div className="flex justify-between p-2">
-                        <span className="text-green-700">Vaccinations:</span>
-                        <span className="font-bold text-green-800">{animalHealthRecords.length > 0 ? animalHealthRecords[0].vaccination_status || 'Not recorded' : 'No records'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Tabs */}
+          <div className="bg-gray-50 border-b border-gray-200">
+            <div className="flex space-x-0">
+              {[
+                { id: 'profile', label: 'Animal Profile', icon: '🐾' },
+                { id: 'health', label: 'Health & Vaccinations', icon: '💉' },
+                { id: 'records', label: 'Production Records', icon: '📊' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-yellow-400 text-indigo-800 bg-yellow-50'
+                      : 'border-transparent text-gray-600 hover:text-indigo-800 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-                <div className="bg-gradient-to-br from-blue-100 to-blue-200 p-6 rounded-2xl text-center hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl font-bold text-blue-700 mb-2">{animalHealthRecords.length}</div>
-                  <div className="text-sm font-medium text-blue-600">Health Records</div>
-                </div>
-                <div className="bg-gradient-to-br from-green-100 to-green-200 p-6 rounded-2xl text-center hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl font-bold text-green-700 mb-2">{animalHealthRecords.filter(r => r.vaccination_record).length}</div>
-                  <div className="text-sm font-medium text-green-600">Vaccinations</div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-100 to-orange-200 p-6 rounded-2xl text-center hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl font-bold text-orange-700 mb-2">{animalHealthRecords.filter(r => r.feeding_schedule).length}</div>
-                  <div className="text-sm font-medium text-orange-600">Feeding Logs</div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-100 to-purple-200 p-6 rounded-2xl text-center hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl font-bold text-purple-700 mb-2">{animalHealthRecords.filter(r => r.medication).length}</div>
-                  <div className="text-sm font-medium text-purple-600">Medications</div>
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="mb-8">
-                <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                  🕰️ Recent Health Records
-                </h4>
-                <div className="space-y-4 max-h-64 overflow-y-auto">
-                  {animalHealthRecords.length > 0 ? (
-                    animalHealthRecords.slice(0, 5).map((record, index) => (
-                      <div key={record.id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border-l-4 border-blue-500">
-                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">🏥</div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-800">{record.diagnosis || 'Health Record'}</p>
-                          <p className="text-sm text-gray-600">{new Date(record.created_at).toLocaleDateString()}</p>
-                          {record.weight && <p className="text-xs text-gray-500">Weight: {record.weight}kg</p>}
-                        </div>
-                      </div>
-                    ))
+          {/* Tab Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+            {/* Left Column - Animal Photo */}
+            <div className="lg:col-span-1">
+              <div className="bg-gray-50 rounded-xl p-6 text-center">
+                <div className="w-48 h-48 mx-auto mb-4 bg-white rounded-full border-4 border-gray-200 overflow-hidden">
+                  {selectedAnimal.image_url ? (
+                    <img 
+                      src={selectedAnimal.image_url} 
+                      alt={selectedAnimal.name} 
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>No health records yet</p>
-                      <p className="text-sm">Add a health record to see activity here</p>
+                    <div className="w-full h-full flex items-center justify-center text-6xl">
+                      {selectedAnimal.species === 'Pig' ? '🐷' : selectedAnimal.species === 'Chicken' ? '🐔' : '🐄'}
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => {
-                    setShowAnimalReport(false)
-                    openHealthForm(selectedAnimal)
-                  }}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-                >
-                  🏥 Add Health Record
-                </button>
-                <button
-                  onClick={() => setShowAnimalReport(false)}
-                  className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-all duration-300"
-                >
-                  Close
+                <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 mx-auto">
+                  <Camera className="w-4 h-4" />
+                  <span>Edit Picture</span>
                 </button>
               </div>
             </div>
+
+            {/* Right Column - Animal Details */}
+            <div className="lg:col-span-2">
+              {activeTab === 'profile' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Registration No.</label>
+                      <input
+                        type="text"
+                        value={selectedAnimal.id.slice(0, 8)}
+                        className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                        disabled
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                      <input
+                        type="text"
+                        value={selectedAnimal.name}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
+                      <input
+                        type="text"
+                        value={selectedAnimal.species}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Breed</label>
+                      <input
+                        type="text"
+                        value={selectedAnimal.breed || ''}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                      <input
+                        type="date"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                      <input
+                        type="text"
+                        value={`${selectedAnimal.age || 0} years`}
+                        className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                        disabled
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                      <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option>Male</option>
+                        <option>Female</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                      <input
+                        type="number"
+                        placeholder="Enter current weight"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'health' && (
+                <div className="space-y-6">
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold text-green-800 mb-3">Vaccination History</h4>
+                    <div className="space-y-3">
+                      {animalHealthRecords.filter(r => r.vaccination_record).map((record, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 bg-white rounded-lg">
+                          <div>
+                            <p className="font-medium text-gray-800">{record.vaccination_record}</p>
+                            <p className="text-sm text-gray-600">{new Date(record.created_at).toLocaleDateString()}</p>
+                          </div>
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Completed</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 mb-3">Health Records</h4>
+                    <div className="space-y-3">
+                      {animalHealthRecords.slice(0, 3).map((record, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 bg-white rounded-lg">
+                          <div>
+                            <p className="font-medium text-gray-800">{record.diagnosis || 'Health Check'}</p>
+                            <p className="text-sm text-gray-600">{new Date(record.created_at).toLocaleDateString()}</p>
+                          </div>
+                          {record.temperature && (
+                            <span className="text-sm text-blue-600">{record.temperature}°C</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'records' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-purple-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-purple-700">{animalHealthRecords.length}</div>
+                      <div className="text-sm text-purple-600">Total Records</div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-orange-700">{animalHealthRecords.filter(r => r.weight).length}</div>
+                      <div className="text-sm text-orange-600">Weight Records</div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 mb-3">Production Data</h4>
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No production records available</p>
+                      <p className="text-sm">Add production data to track performance</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4 mt-6 pt-6 border-t border-gray-200">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
+                  <Save className="w-4 h-4" />
+                  <span>Save Your Data</span>
+                </button>
+                <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium">
+                  Find Your Data
+                </button>
+                <button className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+
         </div>
       )}
     </div>

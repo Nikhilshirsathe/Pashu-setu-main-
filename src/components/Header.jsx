@@ -92,37 +92,37 @@ export default function Header({ isOpen, setIsOpen, user }) {
     }
   }
   return (
-    <header className="glass shadow-xl border-b border-neutral-200/50 px-6 py-4 fixed top-0 left-0 right-0 z-30 w-full">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 fixed top-0 left-0 right-0 z-30 w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-neutral-100 rounded-xl transition-all duration-200 hover:shadow-md"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
           >
-            <Menu className="w-6 h-6 text-neutral-600" />
+            <Menu className="w-6 h-6 text-gray-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">Pashu Setu</h1>
-            <p className="text-sm text-neutral-500">Animal Healthcare Management System</p>
+            <h1 className="text-xl font-bold text-gray-800">Pashu Setu</h1>
+            <p className="text-sm text-gray-500">Animal Healthcare Management System</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-4">
           {/* Search Bar */}
-          <div className="hidden md:flex items-center bg-neutral-100 rounded-xl px-4 py-2 space-x-2 hover:shadow-md transition-all duration-200">
-            <Search className="w-4 h-4 text-neutral-400" />
+          <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-4 py-2 space-x-2">
+            <Search className="w-4 h-4 text-gray-400" />
             <input 
               type="text" 
               placeholder="Search animals, records..."
-              className="bg-transparent text-sm text-neutral-600 placeholder-neutral-400 outline-none w-48"
+              className="bg-transparent text-sm text-gray-600 placeholder-gray-400 outline-none w-48"
             />
           </div>
           
           {/* Weather */}
-          <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-xl border border-blue-200 hover:shadow-md transition-all duration-200 hover:scale-105">
-            <CloudSun className="w-5 h-5 text-blue-500" />
+          <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+            <CloudSun className="w-4 h-4 text-blue-600" />
             <div className="text-sm">
-              <span className="text-blue-700 font-semibold">{weather.temp}°C</span>
+              <span className="text-blue-700 font-medium">{weather.temp}°C</span>
               <span className="text-blue-600 ml-1">{weather.description}</span>
             </div>
           </div>
@@ -131,9 +131,9 @@ export default function Header({ isOpen, setIsOpen, user }) {
           <div className="relative notification-dropdown">
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 hover:bg-neutral-100 rounded-xl transition-all duration-200 hover:shadow-md hover:scale-105"
+              className="relative p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
             >
-              <Bell className="w-5 h-5 text-neutral-600" />
+              <Bell className="w-5 h-5 text-gray-600" />
               {notifications.length > 0 && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                   <span className="text-xs text-white font-bold">{notifications.length}</span>
@@ -196,18 +196,18 @@ export default function Header({ isOpen, setIsOpen, user }) {
           
           {/* User Profile */}
           <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-2 rounded-xl border border-emerald-200">
-              <User className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-700">
+            <div className="flex items-center space-x-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+              <User className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-green-700">
                 {user?.email || 'User'}
               </span>
             </div>
             <button 
               onClick={() => supabase.auth.signOut()}
-              className="p-2 hover:bg-red-50 rounded-xl transition-all duration-200 hover:shadow-md group"
+              className="p-2 hover:bg-red-50 rounded-lg transition-all duration-200 group"
               title="Logout"
             >
-              <LogOut className="w-5 h-5 text-neutral-600 group-hover:text-red-600" />
+              <LogOut className="w-5 h-5 text-gray-600 group-hover:text-red-600" />
             </button>
           </div>
 

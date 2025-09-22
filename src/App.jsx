@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Auth from './pages/Auth'
-import SignUp from './pages/SignUp'
+import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import Consultation from './pages/Consultation'
 import Lab from './pages/Lab'
@@ -35,8 +35,15 @@ export default function App() {
     // Check URL for routing
     const checkRoute = () => {
       const path = window.location.pathname
-      if (path === '/signup') {
+      if (path === '/login') {
+        setCurrentPage('auth')
+      } else if (path === '/signup') {
         setCurrentPage('signup')
+      } else if (path.startsWith('/dashboard')) {
+        const section = path.split('/')[2] || 'dashboard'
+        setActiveSection(section)
+      } else if (path === '/') {
+        setCurrentPage('auth')
       } else {
         setCurrentPage('auth')
       }
@@ -57,9 +64,9 @@ export default function App() {
         if (userRole) {
           localStorage.setItem('userRole', userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole)
         }
-        // Update URL to root when authenticated
-        if (window.location.pathname !== '/') {
-          window.history.pushState({}, '', '/')
+        // Update URL to dashboard when authenticated
+        if (!window.location.pathname.startsWith('/dashboard')) {
+          window.history.pushState({}, '', '/dashboard')
         }
       }
     })
@@ -74,36 +81,39 @@ export default function App() {
         if (userRole) {
           localStorage.setItem('userRole', userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole)
         }
-        // Update URL to root when authenticated
-        window.history.pushState({}, '', '/')
+        // Update URL to dashboard when authenticated
+        window.history.pushState({}, '', '/dashboard')
       } else {
         setUser(null)
         setIsAuthenticated(false)
         setCurrentPage('auth')
         localStorage.removeItem('userRole')
+        // Redirect to login if not on auth pages
+        if (!window.location.pathname.match(/^\/(login|signup)$/)) {
+          window.history.pushState({}, '', '/login')
+        }
       }
     })
 
-    // Listen for hash changes to switch sections
-    const handleHashChange = () => {
-      const hash = window.location.hash.substring(1)
-      if (hash && pages[hash]) {
-        setActiveSection(hash)
-      }
-    }
-    
-    window.addEventListener('hashchange', handleHashChange)
-    handleHashChange() // Check initial hash
+
 
     return () => {
       subscription.unsubscribe()
-      window.removeEventListener('hashchange', handleHashChange)
       window.removeEventListener('popstate', checkRoute)
     }
   }, [])
 
   if (!isAuthenticated) {
-    return currentPage === 'signup' ? <SignUp /> : <Auth />
+    return currentPage === 'signup' ? <Signup /> : <Auth />
+  }
+
+  // Redirect authenticated users to dashboard, unauthenticated to login
+  if (window.location.pathname === '/') {
+    if (isAuthenticated) {
+      window.history.pushState({}, '', '/dashboard')
+    } else {
+      window.history.pushState({}, '', '/login')
+    }
   }
 
   const CurrentPage = pages[activeSection].component
