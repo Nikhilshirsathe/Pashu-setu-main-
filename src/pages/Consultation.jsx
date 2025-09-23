@@ -1,6 +1,7 @@
 import { MessageCircle, Video, Search, Baby, Clock, Users, Calendar, Phone, Bell, CheckCircle, AlertCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import DiseaseAnalyzer from '../components/DiseaseAnalyzer'
 
 export default function Consultation() {
   const [userRole, setUserRole] = useState('farmer')
@@ -9,6 +10,7 @@ export default function Consultation() {
   const [showRequestForm, setShowRequestForm] = useState(false)
   const [selectedAnimal, setSelectedAnimal] = useState('')
   const [requestMessage, setRequestMessage] = useState('')
+  const [showDiseaseAnalyzer, setShowDiseaseAnalyzer] = useState(false)
 
   useEffect(() => {
     const role = localStorage.getItem('userRole') || 'farmer'
@@ -217,6 +219,10 @@ export default function Consultation() {
     }
   ]
 
+  if (showDiseaseAnalyzer) {
+    return <DiseaseAnalyzer onBack={() => setShowDiseaseAnalyzer(false)} />
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="text-center">
@@ -271,7 +277,10 @@ export default function Consultation() {
               <p className="text-neutral-600 mb-6 leading-relaxed">{service.description}</p>
               
               <button 
-                onClick={() => service.title === 'Video Consultation' ? setShowRequestForm(true) : null}
+                onClick={() => {
+                  if (service.title === 'Video Consultation') setShowRequestForm(true)
+                  else if (service.title === 'Disease Analyzer') setShowDiseaseAnalyzer(true)
+                }}
                 className={`btn w-full ${
                   service.color === 'emerald' ? 'btn-success' :
                   service.color === 'blue' ? 'btn-primary' :

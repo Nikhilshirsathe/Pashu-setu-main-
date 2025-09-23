@@ -1,6 +1,7 @@
 import { Sprout, Stethoscope, Heart, Microscope, Truck, Eye, EyeOff, Mail, Lock, ArrowRight, Globe } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { verifyPasswordWithSalt } from '../lib/encryption'
 
 export default function Auth() {
   const [selectedRole, setSelectedRole] = useState('farmer')
@@ -19,6 +20,27 @@ export default function Auth() {
   const handleLogin = async (e) => {
     e.preventDefault()
     try {
+      // Check local encrypted storage first
+      const storedUsers = JSON.parse(localStorage.getItem('pashu_setu_users') || '{}')
+      const userKey = `${selectedRole}_${formData.email}`
+      const storedUser = storedUsers[userKey]
+      
+      if (storedUser) {
+        // Verify encrypted password
+        const isValidPassword = await verifyPasswordWithSalt(formData.password, storedUser.hash, storedUser.salt)
+        
+        if (isValidPassword) {
+          localStorage.setItem('userRole', selectedRole)
+          localStorage.setItem('userEmail', formData.email)
+          window.location.href = '/dashboard'
+          return
+        } else {
+          alert(isHindi ? 'गलत पासवर्ड' : 'Invalid password')
+          return
+        }
+      }
+      
+      // Fallback to Supabase auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
@@ -39,7 +61,7 @@ export default function Auth() {
       }
       
       localStorage.setItem('userRole', normalizedUserRole)
-      console.log('Login successful, role set to:', normalizedUserRole)
+      window.location.href = '/dashboard'
     } catch (error) {
       alert(isHindi ? 'लॉगिन त्रुटि: ' + error.message : 'Login error: ' + error.message)
     }

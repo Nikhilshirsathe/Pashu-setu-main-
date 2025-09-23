@@ -1,6 +1,7 @@
 import { Sprout, Stethoscope, Heart, Microscope, Truck, Eye, EyeOff, Mail, Lock, User, ArrowRight, Globe } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { hashPasswordWithSalt } from '../lib/encryption'
 
 export default function Signup() {
   const [selectedRole, setSelectedRole] = useState('farmer')
@@ -32,25 +33,50 @@ export default function Signup() {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            role: selectedRole
-          }
-        }
-      })
+      // Encrypt password and store locally
+      const { hash, salt } = await hashPasswordWithSalt(formData.password)
       
-      if (error) {
-        alert(isHindi ? 'साइनअप असफल: ' + error.message : 'Signup failed: ' + error.message)
+      const storedUsers = JSON.parse(localStorage.getItem('pashu_setu_users') || '{}')
+      const userKey = `${selectedRole}_${formData.email}`
+      
+      // Check if user already exists
+      if (storedUsers[userKey]) {
+        alert(isHindi ? 'यह ईमेल पहले से पंजीकृत है' : 'User already exists with this email')
+        setLoading(false)
         return
       }
       
+      // Store encrypted user data
+      storedUsers[userKey] = {
+        name: formData.name,
+        email: formData.email,
+        role: selectedRole,
+        hash,
+        salt,
+        createdAt: new Date().toISOString()
+      }
+      
+      localStorage.setItem('pashu_setu_users', JSON.stringify(storedUsers))
+      
+      // Also try Supabase signup as backup
+      try {
+        await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              name: formData.name,
+              role: selectedRole
+            }
+          }
+        })
+      } catch (supabaseError) {
+        console.log('Supabase signup failed, using local storage only')
+      }
+      
       localStorage.setItem('userRole', selectedRole)
-      alert(isHindi ? 'खाता बनाया गया! अपना ईमेल चेक करें' : 'Account created! Check your email for verification')
-      window.location.hash = '#auth'
+      alert(isHindi ? 'खाता सफलतापूर्वक बनाया गया!' : 'Account created successfully!')
+      window.location.href = '/login'
     } catch (error) {
       alert(isHindi ? 'साइनअप त्रुटि: ' + error.message : 'Signup error: ' + error.message)
     } finally {

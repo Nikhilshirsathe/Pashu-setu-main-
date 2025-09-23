@@ -15,6 +15,7 @@ export default function Records() {
   const [animals, setAnimals] = useState([])
   const [animalHealthRecords, setAnimalHealthRecords] = useState([])
   const [loading, setLoading] = useState(true)
+  const [notification, setNotification] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     species: '',
@@ -189,12 +190,14 @@ export default function Records() {
       
       if (error) throw error
       
-      alert('Animal added successfully!')
+      setNotification({ type: 'success', message: `${formData.name} added successfully!` })
+      setTimeout(() => setNotification(null), 3000)
       setFormData({ name: '', species: '', breed: '', age: '', image: null })
       setShowAddForm(false)
       fetchAnimals()
     } catch (error) {
-      alert('Error adding animal: ' + error.message)
+      setNotification({ type: 'error', message: 'Error adding animal: ' + error.message })
+      setTimeout(() => setNotification(null), 3000)
     }
   }
 
@@ -207,10 +210,12 @@ export default function Records() {
           .eq('id', id)
         
         if (error) throw error
-        alert('Animal deleted successfully!')
+        setNotification({ type: 'success', message: 'Animal deleted successfully!' })
+        setTimeout(() => setNotification(null), 3000)
         fetchAnimals()
       } catch (error) {
-        alert('Error deleting animal: ' + error.message)
+        setNotification({ type: 'error', message: 'Error deleting animal: ' + error.message })
+        setTimeout(() => setNotification(null), 3000)
       }
     }
   }
@@ -241,7 +246,8 @@ export default function Records() {
       
       if (error) throw error
       
-      alert('Health record saved successfully!')
+      setNotification({ type: 'success', message: 'Health record saved successfully!' })
+      setTimeout(() => setNotification(null), 3000)
       setHealthData({
         animal_id: '',
         tag_number: '',
@@ -266,7 +272,8 @@ export default function Records() {
         fetchAllHealthRecords()
       }
     } catch (error) {
-      alert('Error saving health record: ' + error.message)
+      setNotification({ type: 'error', message: 'Error saving health record: ' + error.message })
+      setTimeout(() => setNotification(null), 3000)
     }
   }
 
@@ -317,6 +324,21 @@ export default function Records() {
 
   return (
     <div className="space-y-6">
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border-l-4 ${
+          notification.type === 'success' 
+            ? 'bg-green-50 border-green-500 text-green-800' 
+            : 'bg-red-50 border-red-500 text-red-800'
+        } animate-in slide-in-from-right-4 duration-300`}>
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">
+              {notification.type === 'success' ? '✅' : '❌'}
+            </span>
+            <span className="font-medium">{notification.message}</span>
+          </div>
+        </div>
+      )}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Animal Records</h2>
@@ -580,82 +602,119 @@ export default function Records() {
         </div>
       )}
 
-      {/* Animals List */}
+      {/* Animals Grid */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-xl font-bold text-gray-800">Your Animals ({animals.length})</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
               <span className="ml-3 text-gray-600">Loading animals...</span>
             </div>
+          ) : animals.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🐄</div>
+              <p className="text-gray-500 mb-4">No animals added yet</p>
+              <p className="text-sm text-gray-400">Click "Add Animal" to get started</p>
+            </div>
           ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Species</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Breed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {animals.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                      No animals added yet. Click "Add Animal" to get started.
-                    </td>
-                  </tr>
-                ) : (
-                animals.map((animal) => (
-                  <tr key={animal.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {animals.map((animal) => (
+                <div key={animal.id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  {/* Animal Photo */}
+                  <div className="relative mb-4">
+                    <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200">
                       {animal.image_url ? (
-                        <img src={animal.image_url} alt={animal.name} className="w-12 h-12 rounded-lg object-cover" />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-500 text-xs">No Photo</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{animal.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{animal.species}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{animal.breed || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{animal.age || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => openAnimalReport(animal)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium"
-                        >
-                          📊 Report
-                        </button>
-                        <button 
-                          onClick={() => openHealthForm(animal)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-medium"
-                        >
-                          🏥 Health Form
-                        </button>
-                        <button className="text-blue-600 hover:text-blue-800">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteAnimal(animal.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <img 
+                          src={animal.image_url} 
+                          alt={animal.name} 
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full flex items-center justify-center text-6xl ${animal.image_url ? 'hidden' : 'flex'}`}>
+                        {animal.species === 'Pig' ? '🐷' : animal.species === 'Chicken' ? '🐔' : animal.species === 'Cow' ? '🐄' : animal.species === 'Goat' ? '🐐' : animal.species === 'Sheep' ? '🐑' : '🐾'}
                       </div>
-                    </td>
-                  </tr>
-                ))
-                )}
-              </tbody>
-            </table>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700 shadow-sm border border-white/50">
+                      ID: {animal.id.slice(0, 6)}
+                    </div>
+                  </div>
+
+                  {/* Animal Info */}
+                  <div className="mb-4">
+                    <h4 className="text-lg font-bold text-gray-900 mb-1">{animal.name}</h4>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <span className="flex items-center space-x-1">
+                        <span>🏷️</span>
+                        <span>{animal.species}</span>
+                      </span>
+                      {animal.breed && (
+                        <span className="flex items-center space-x-1">
+                          <span>🧬</span>
+                          <span>{animal.breed}</span>
+                        </span>
+                      )}
+                    </div>
+                    {animal.age && (
+                      <div className="flex items-center space-x-1 text-sm text-gray-600 mt-1">
+                        <span>📅</span>
+                        <span>{animal.age} years old</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Health Status */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-500">Health Status</span>
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        ✅ Healthy
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => openAnimalReport(animal)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>View Report</span>
+                    </button>
+                    <button 
+                      onClick={() => openHealthForm(animal)}
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <span>🏥</span>
+                      <span>Health Check</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+                    <button className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <div className="text-xs text-gray-400">
+                      Added {new Date(animal.created_at).toLocaleDateString()}
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteAnimal(animal.id)}
+                      className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
