@@ -2,6 +2,46 @@ import { ClipboardList, FolderOpen, Plus, Edit, Trash2, Heart, Calendar, Syringe
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+// Image compression utility
+const compressImage = (file, maxWidth = 800, maxHeight = 600, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    
+    img.onload = () => {
+      // Calculate new dimensions
+      let { width, height } = img
+      
+      if (width > height) {
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+      } else {
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height
+          height = maxHeight
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      // Enable high-quality image smoothing
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      
+      // Draw and compress
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      canvas.toBlob(resolve, 'image/jpeg', quality)
+    }
+    
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function Records() {
   const [userRole, setUserRole] = useState('farmer')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -161,12 +201,17 @@ export default function Records() {
       
       // Upload image if provided
       if (formData.image) {
+        // Compress and optimize image before upload
+        const compressedImage = await compressImage(formData.image)
         const fileExt = formData.image.name.split('.').pop()
         const fileName = `${user?.id}/${Date.now()}.${fileExt}`
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('animal-images')
-          .upload(fileName, formData.image)
+          .upload(fileName, compressedImage, {
+            cacheControl: '3600',
+            upsert: false
+          })
         
         if (uploadError) throw uploadError
         
@@ -190,8 +235,8 @@ export default function Records() {
       
       if (error) throw error
       
-      setNotification({ type: 'success', message: `${formData.name} added successfully!` })
-      setTimeout(() => setNotification(null), 3000)
+      setNotification({ type: 'success', message: `🐾 ${formData.name} added successfully!` })
+      setTimeout(() => setNotification(null), 4000)
       setFormData({ name: '', species: '', breed: '', age: '', image: null })
       setShowAddForm(false)
       fetchAnimals()
@@ -210,8 +255,8 @@ export default function Records() {
           .eq('id', id)
         
         if (error) throw error
-        setNotification({ type: 'success', message: 'Animal deleted successfully!' })
-        setTimeout(() => setNotification(null), 3000)
+        setNotification({ type: 'success', message: '🗑️ Animal deleted successfully!' })
+        setTimeout(() => setNotification(null), 4000)
         fetchAnimals()
       } catch (error) {
         setNotification({ type: 'error', message: 'Error deleting animal: ' + error.message })
@@ -246,8 +291,8 @@ export default function Records() {
       
       if (error) throw error
       
-      setNotification({ type: 'success', message: 'Health record saved successfully!' })
-      setTimeout(() => setNotification(null), 3000)
+      setNotification({ type: 'success', message: '🎥 Health record saved successfully!' })
+      setTimeout(() => setNotification(null), 4000)
       setHealthData({
         animal_id: '',
         tag_number: '',
@@ -326,16 +371,27 @@ export default function Records() {
     <div className="space-y-6">
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border-l-4 ${
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-xl border-l-4 transform transition-all duration-300 ${
           notification.type === 'success' 
             ? 'bg-green-50 border-green-500 text-green-800' 
             : 'bg-red-50 border-red-500 text-red-800'
-        } animate-in slide-in-from-right-4 duration-300`}>
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">
-              {notification.type === 'success' ? '✅' : '❌'}
-            </span>
-            <span className="font-medium">{notification.message}</span>
+        }`}
+        style={{
+          animation: 'slideInRight 0.3s ease-out'
+        }}>
+          <div className="flex items-center justify-between space-x-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg">
+                {notification.type === 'success' ? '✅' : '❌'}
+              </span>
+              <span className="font-medium">{notification.message}</span>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-gray-400 hover:text-gray-600 ml-4"
+            >
+              ×
+            </button>
           </div>
         </div>
       )}
@@ -625,12 +681,18 @@ export default function Records() {
                 <div key={animal.id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
                   {/* Animal Photo */}
                   <div className="relative mb-4">
-                    <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200">
+                    <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200 flex items-center justify-center">
                       {animal.image_url ? (
                         <img 
                           src={animal.image_url} 
                           alt={animal.name} 
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          style={{
+                            imageRendering: 'high-quality',
+                            WebkitImageSmoothing: true,
+                            imageSmoothing: true
+                          }}
+                          loading="lazy"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.nextSibling.style.display = 'flex';

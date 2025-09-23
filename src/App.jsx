@@ -32,6 +32,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('auth')
 
   useEffect(() => {
+    
     // Check URL for routing
     const checkRoute = () => {
       const path = window.location.pathname
@@ -39,9 +40,30 @@ export default function App() {
         setCurrentPage('auth')
       } else if (path === '/signup') {
         setCurrentPage('signup')
-      } else if (path.startsWith('/dashboard')) {
-        const section = path.split('/')[2] || 'dashboard'
+      } else if (path.match(/^\/(farmer|veterinary|volunteer|lab|dispatcher)(\/dashboard)?/)) {
+        const pathParts = path.split('/').filter(p => p)
+        const role = pathParts[0]
+        const section = pathParts[2] || 'dashboard'
+        
+        // Verify user role matches URL
+        const userRole = localStorage.getItem('userRole')
+        if (userRole && userRole !== role) {
+          // Redirect to correct role dashboard
+          window.history.pushState({}, '', `/${userRole}/dashboard`)
+          return
+        }
+        
         setActiveSection(section)
+        setCurrentPage('dashboard')
+      } else if (path.startsWith('/dashboard')) {
+        // Legacy dashboard route - redirect to role-based route
+        const userRole = localStorage.getItem('userRole')
+        if (userRole) {
+          const section = path.split('/')[2] || ''
+          const newPath = section ? `/${userRole}/dashboard/${section}` : `/${userRole}/dashboard`
+          window.history.pushState({}, '', newPath)
+          setCurrentPage('dashboard')
+        }
       } else if (path === '/') {
         setCurrentPage('auth')
       } else {
@@ -61,12 +83,12 @@ export default function App() {
         setIsAuthenticated(true)
         // Set user role from metadata
         const userRole = session.user?.user_metadata?.role
-        if (userRole) {
-          localStorage.setItem('userRole', userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole)
-        }
-        // Update URL to dashboard when authenticated
-        if (!window.location.pathname.startsWith('/dashboard')) {
-          window.history.pushState({}, '', '/dashboard')
+        const normalizedRole = userRole === 'doctor' ? 'veterinary' : userRole === 'lab_employee' ? 'lab' : userRole
+        if (normalizedRole) {
+          localStorage.setItem('userRole', normalizedRole)
+          if (!window.location.pathname.startsWith(`/${normalizedRole}/dashboard`)) {
+            window.history.pushState({}, '', `/${normalizedRole}/dashboard`)
+          }
         }
       }
     })
@@ -78,11 +100,11 @@ export default function App() {
         setIsAuthenticated(true)
         // Set user role from metadata
         const userRole = session.user?.user_metadata?.role
-        if (userRole) {
-          localStorage.setItem('userRole', userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole)
+        const normalizedRole = userRole === 'doctor' ? 'veterinary' : userRole === 'lab_employee' ? 'lab' : userRole
+        if (normalizedRole) {
+          localStorage.setItem('userRole', normalizedRole)
+          window.history.pushState({}, '', `/${normalizedRole}/dashboard`)
         }
-        // Update URL to dashboard when authenticated
-        window.history.pushState({}, '', '/dashboard')
       } else {
         setUser(null)
         setIsAuthenticated(false)
@@ -103,14 +125,18 @@ export default function App() {
     }
   }, [])
 
+  // Show auth pages if not authenticated
   if (!isAuthenticated) {
     return currentPage === 'signup' ? <Signup /> : <Auth />
   }
 
-  // Redirect authenticated users to dashboard, unauthenticated to login
+  // Redirect authenticated users to role-based dashboard, unauthenticated to login
   if (window.location.pathname === '/') {
     if (isAuthenticated) {
-      window.history.pushState({}, '', '/dashboard')
+      const userRole = localStorage.getItem('userRole')
+      if (userRole) {
+        window.history.pushState({}, '', `/${userRole}/dashboard`)
+      }
     } else {
       window.history.pushState({}, '', '/login')
     }

@@ -187,7 +187,7 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
               <div key={item.id} className="mb-2">
                 <button
                   onClick={() => {
-                    const url = item.id === 'dashboard' ? '/dashboard' : `/dashboard/${item.id}`
+                    const url = item.id === 'dashboard' ? `/${normalizedRole}/dashboard` : `/${normalizedRole}/dashboard/${item.id}`
                     window.history.pushState({}, '', url)
                     window.dispatchEvent(new PopStateEvent('popstate'))
                     toggleExpanded(item.id)
@@ -216,7 +216,7 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
                         key={index} 
                         onClick={(e) => {
                           e.stopPropagation()
-                          const url = item.id === 'dashboard' ? '/dashboard' : `/dashboard/${item.id}`
+                          const url = item.id === 'dashboard' ? `/${normalizedRole}/dashboard` : `/${normalizedRole}/dashboard/${item.id}`
                           window.history.pushState({}, '', url)
                           window.dispatchEvent(new PopStateEvent('popstate'))
                           if (item.id === 'education') {

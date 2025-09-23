@@ -5,6 +5,7 @@ import { getRecommendedTests, sampleCollection } from '../lib/labService'
 import { languages, emergencyContacts, speakText, saveOfflineData } from '../lib/smartFeatures'
 import { predictDiseaseProgression, generateTreatmentPlan, generateFollowUpReminders } from '../lib/aiEnhancements'
 import { generateHealthReport, generatePDFReport, estimateTreatmentCost } from '../lib/reportingService'
+import ImageAnalyzer from './ImageAnalyzer'
 
 export default function DiseaseAnalyzer({ onBack }) {
   const [step, setStep] = useState(1)
@@ -23,6 +24,8 @@ export default function DiseaseAnalyzer({ onBack }) {
   const [showEmergency, setShowEmergency] = useState(false)
   const [treatmentPlan, setTreatmentPlan] = useState(null)
   const [costEstimate, setCostEstimate] = useState(null)
+  const [showImageAnalyzer, setShowImageAnalyzer] = useState(false)
+  const [yoloResults, setYoloResults] = useState(null)
 
   const animalTypes = [
     { id: 'pig', name: 'Pig', emoji: '🐷' },
@@ -550,21 +553,74 @@ export default function DiseaseAnalyzer({ onBack }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Photo (Optional)</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImage(e.target.files[0])}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label htmlFor="image-upload" className="cursor-pointer">
-                  <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">Click to upload animal photo</p>
-                </label>
-                {image && <p className="text-sm text-green-600 mt-2">Image uploaded: {image.name}</p>}
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-gray-700">Photo Analysis</label>
+                <button
+                  type="button"
+                  onClick={() => setShowImageAnalyzer(!showImageAnalyzer)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2"
+                >
+                  <Brain className="w-4 h-4" />
+                  <span>{showImageAnalyzer ? 'Hide' : 'YOLOv8'} AI Analysis</span>
+                </button>
               </div>
+              
+              {showImageAnalyzer ? (
+                <ImageAnalyzer 
+                  animalType={selectedAnimal}
+                  onAnalysisComplete={(results) => {
+                    setYoloResults(results)
+                    // Auto-add detected symptoms from integrated analysis
+                    if (results.success) {
+                      let detectedSymptoms = []
+                      
+                      // Extract symptoms from CNN analysis
+                      if (results.cnnAnalysis?.topPrediction?.disease !== 'healthy') {
+                        const diseaseSymptoms = {
+                          'bacterial_dermatitis': ['Skin lesions', 'Loss of appetite'],
+                          'fungal_infection': ['Skin lesions', 'Loss of appetite'],
+                          'parasitic_infection': ['Skin lesions', 'Loss of appetite'],
+                          'mange': ['Skin lesions', 'Loss of appetite', 'Lethargy'],
+                          'ringworm': ['Skin lesions', 'Loss of appetite'],
+                          'hot_spot': ['Skin lesions', 'Loss of appetite'],
+                          'viral_papilloma': ['Skin lesions'],
+                          'seborrhea': ['Skin lesions', 'Loss of appetite'],
+                          'allergic_dermatitis': ['Skin lesions', 'Loss of appetite']
+                        }
+                        const disease = results.cnnAnalysis.topPrediction.disease
+                        detectedSymptoms = diseaseSymptoms[disease] || ['Skin lesions']
+                      }
+                      
+                      // Extract symptoms from YOLOv8 detections
+                      if (results.detections) {
+                        const yoloSymptoms = results.detections
+                          .filter(d => d.severity !== 'Normal')
+                          .map(d => d.class.replace('_', ' '))
+                        detectedSymptoms = [...detectedSymptoms, ...yoloSymptoms]
+                      }
+                      
+                      if (detectedSymptoms.length > 0) {
+                        setSymptoms(prev => [...new Set([...prev, ...detectedSymptoms])])
+                      }
+                    }
+                  }}
+                />
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImage(e.target.files[0])}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label htmlFor="image-upload" className="cursor-pointer">
+                    <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600">Click to upload animal photo</p>
+                  </label>
+                  {image && <p className="text-sm text-green-600 mt-2">Image uploaded: {image.name}</p>}
+                </div>
+              )}
             </div>
           </div>
           

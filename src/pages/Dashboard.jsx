@@ -490,7 +490,14 @@ export default function Dashboard() {
                 <span className="text-sm font-medium text-blue-700">{weather.temp}°C</span>
               </div>
             )}
-            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 font-medium">
+            <button 
+              onClick={() => {
+                const userRole = localStorage.getItem('userRole') || 'farmer'
+                window.history.pushState({}, '', `/${userRole}/dashboard/records`)
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 font-medium"
+            >
               <Plus className="w-4 h-4" />
               <span>Add Animal</span>
             </button>
@@ -531,7 +538,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button 
             onClick={() => {
-              window.history.pushState({}, '', '/dashboard/consultation')
+              const userRole = localStorage.getItem('userRole') || 'farmer'
+              window.history.pushState({}, '', `/${userRole}/dashboard/consultation`)
               window.dispatchEvent(new PopStateEvent('popstate'))
             }}
             className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-200 text-left"
@@ -549,7 +557,8 @@ export default function Dashboard() {
           
           <button 
             onClick={() => {
-              window.history.pushState({}, '', '/dashboard/consultation')
+              const userRole = localStorage.getItem('userRole') || 'farmer'
+              window.history.pushState({}, '', `/${userRole}/dashboard/consultation`)
               window.dispatchEvent(new PopStateEvent('popstate'))
             }}
             className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-200 text-left"
@@ -567,7 +576,8 @@ export default function Dashboard() {
           
           <button 
             onClick={() => {
-              window.history.pushState({}, '', '/dashboard/emergency')
+              const userRole = localStorage.getItem('userRole') || 'farmer'
+              window.history.pushState({}, '', `/${userRole}/dashboard/emergency`)
               window.dispatchEvent(new PopStateEvent('popstate'))
             }}
             className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-200 text-left"
@@ -585,7 +595,8 @@ export default function Dashboard() {
           
           <button 
             onClick={() => {
-              window.history.pushState({}, '', '/dashboard/pharmacy')
+              const userRole = localStorage.getItem('userRole') || 'farmer'
+              window.history.pushState({}, '', `/${userRole}/dashboard/pharmacy`)
               window.dispatchEvent(new PopStateEvent('popstate'))
             }}
             className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-200 text-left"
@@ -649,7 +660,8 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
                 <button 
                   onClick={() => {
-                    window.history.pushState({}, '', '/dashboard/records')
+                    const userRole = localStorage.getItem('userRole') || 'farmer'
+                    window.history.pushState({}, '', `/${userRole}/dashboard/records`)
                     window.dispatchEvent(new PopStateEvent('popstate'))
                   }}
                   className="text-green-600 hover:text-green-700 text-sm font-medium"
