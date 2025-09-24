@@ -1,6 +1,7 @@
 import { MessageCircle, Video, Search, Baby, Clock, Users, Calendar, Phone, Bell, CheckCircle, AlertCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import MaternityCare from '../components/MaternityCare'
 
 export default function Consultation() {
   const [userRole, setUserRole] = useState('farmer')
@@ -9,6 +10,7 @@ export default function Consultation() {
   const [showRequestForm, setShowRequestForm] = useState(false)
   const [selectedAnimal, setSelectedAnimal] = useState('')
   const [requestMessage, setRequestMessage] = useState('')
+  const [activeService, setActiveService] = useState(null)
 
   useEffect(() => {
     const role = localStorage.getItem('userRole') || 'farmer'
@@ -271,7 +273,13 @@ export default function Consultation() {
               <p className="text-neutral-600 mb-6 leading-relaxed">{service.description}</p>
               
               <button 
-                onClick={() => service.title === 'Video Consultation' ? setShowRequestForm(true) : null}
+                onClick={() => {
+                  if (service.title === 'Video Consultation') {
+                    setShowRequestForm(true)
+                  } else if (service.title === 'Maternity Care') {
+                    setActiveService('maternity')
+                  }
+                }}
                 className={`btn w-full ${
                   service.color === 'emerald' ? 'btn-success' :
                   service.color === 'blue' ? 'btn-primary' :
@@ -285,8 +293,24 @@ export default function Consultation() {
         })}
       </div>
       
+      {/* Maternity Care Section */}
+      {activeService === 'maternity' && (
+        <div className="card p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-neutral-800">Maternity Care Management</h3>
+            <button 
+              onClick={() => setActiveService(null)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ← Back to Services
+            </button>
+          </div>
+          <MaternityCare />
+        </div>
+      )}
+
       {/* Video Call Request Form */}
-      {showRequestForm && (
+      {showRequestForm && !activeService && (
         <div className="card p-8">
           <h3 className="text-2xl font-bold text-neutral-800 mb-6">Request Video Consultation</h3>
           <div className="space-y-4">
@@ -327,8 +351,9 @@ export default function Consultation() {
         </div>
       )}
       
-      <div className="card p-8">
-        <h3 className="text-2xl font-bold text-neutral-800 mb-6">My Consultation Requests</h3>
+      {!activeService && (
+        <div className="card p-8">
+          <h3 className="text-2xl font-bold text-neutral-800 mb-6">My Consultation Requests</h3>
         <div className="space-y-4">
           {consultationRequests.length === 0 ? (
             <p className="text-neutral-500 text-center py-8">No consultation requests yet</p>
@@ -367,6 +392,7 @@ export default function Consultation() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }
