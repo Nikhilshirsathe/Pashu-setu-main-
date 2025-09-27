@@ -53,8 +53,10 @@
 }
 
 body {
-  background: #ffffff;
-  color: #212121;
+  background-color: #f9fafa;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.5;
   min-height: 100vh;
 }
 
@@ -258,14 +260,16 @@ body {
 
 /* Card Components */
 .card {
-  @apply rounded-xl border border-gray-200 transition-all duration-300;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+  transform: translateY(-3px);
 }
 
 .card-header {
@@ -386,4 +390,15 @@ body {
     opacity: 0;
     transform: translateX(100%);
   }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3) translateY(-50px); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }

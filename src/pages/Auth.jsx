@@ -34,7 +34,7 @@ export default function Auth() {
         if (isValidPassword) {
           localStorage.setItem('userRole', selectedRole)
           localStorage.setItem('userEmail', formData.email)
-          window.location.href = `/${selectedRole}/dashboard`
+          window.location.replace(`/${selectedRole}/dashboard`)
           return
         } else {
           alert(isHindi ? 'गलत पासवर्ड' : 'Invalid password')
@@ -53,17 +53,19 @@ export default function Auth() {
         return
       }
       
-      const userRole = data.user?.user_metadata?.role
+      const userRole = data.user?.user_metadata?.role || selectedRole
       const normalizedUserRole = userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole
       
-      if (normalizedUserRole !== selectedRole) {
+      // Allow login if role matches or if no role is set in metadata
+      if (userRole && normalizedUserRole !== selectedRole) {
         await supabase.auth.signOut()
         alert(isHindi ? 'यह ईमेल पहले से किसी और भूमिका में पंजीकृत है' : 'User already exists with a different role')
         return
       }
       
-      localStorage.setItem('userRole', normalizedUserRole)
-      window.location.href = `/${normalizedUserRole}/dashboard`
+      localStorage.setItem('userRole', selectedRole)
+      localStorage.setItem('userEmail', formData.email)
+      window.location.replace(`/${selectedRole}/dashboard`)
     } catch (error) {
       alert(isHindi ? 'लॉगिन त्रुटि: ' + error.message : 'Login error: ' + error.message)
     }

@@ -4,61 +4,63 @@ import {
   ClipboardList, Menu, X, ChevronDown, ChevronRight, ChevronLeft, User, LogOut 
 } from 'lucide-react'
 import { useState } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
+import { t } from '../translations/translations'
 
-const allMenuItems = {
+const getMenuItems = (language) => ({
   farmer: [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: t('dashboard', language), 
       icon: LayoutDashboard,
       color: 'blue',
-      subItems: ['Overview & Quick Stats']
+      subItems: [t('farm_overview', language)]
     },
     { 
       id: 'consultation', 
-      label: 'Health Consultation', 
+      label: t('consultation', language), 
       icon: Stethoscope,
       color: 'emerald',
-      subItems: ['Vet Connect', 'Telemedicine']
+      subItems: [t('health_consultation', language)]
     },
     { 
       id: 'records', 
-      label: 'Record Management', 
+      label: t('records', language), 
       icon: ClipboardList,
       color: 'indigo',
-      subItems: ['Animal Records & Reports']
+      subItems: [t('animal_records', language)]
     },
     { 
       id: 'lab', 
-      label: 'Lab & Diagnostics', 
+      label: t('lab', language), 
       icon: FlaskConical,
       color: 'purple',
       subItems: ['Test Reports', 'Lab Data']
     },
     { 
       id: 'alerts', 
-      label: 'Risk & Alerts', 
+      label: t('alerts', language), 
       icon: AlertTriangle,
       color: 'orange',
-      subItems: ['Weather Display', 'Regional Alerts']
+      subItems: [t('weather', language), 'Regional Alerts']
     },
     { 
       id: 'education', 
-      label: 'Education Hub', 
+      label: t('education', language), 
       icon: GraduationCap,
       color: 'amber',
       subItems: ['Educational Resources', 'Government Policies', 'Community Platform']
     },
     { 
       id: 'pharmacy', 
-      label: 'Pharmacy', 
+      label: t('pharmacy', language), 
       icon: Pill,
       color: 'teal',
-      subItems: ['Medicines', 'Vaccines', 'Supplies']
+      subItems: [t('medicine', language), t('vaccinations', language), 'Supplies']
     },
     { 
       id: 'emergency', 
-      label: 'Emergency Services', 
+      label: t('emergency', language), 
       icon: Truck,
       color: 'red',
       subItems: ['Quick Help & SOS']
@@ -67,21 +69,21 @@ const allMenuItems = {
   veterinarian: [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: t('dashboard', language), 
       icon: LayoutDashboard,
       color: 'blue',
-      subItems: ['Overview & Quick Stats']
+      subItems: [t('farm_overview', language)]
     },
     { 
       id: 'consultation', 
-      label: 'Health Consultation', 
+      label: t('consultation', language), 
       icon: Stethoscope,
       color: 'emerald',
-      subItems: ['Vet Connect', 'Telemedicine']
+      subItems: [t('health_consultation', language)]
     },
     { 
       id: 'education', 
-      label: 'Education Hub', 
+      label: t('education', language), 
       icon: GraduationCap,
       color: 'amber',
       subItems: ['Educational Resources', 'Government Policies', 'Community Platform']
@@ -90,21 +92,21 @@ const allMenuItems = {
   volunteer: [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: t('dashboard', language), 
       icon: LayoutDashboard,
       color: 'blue',
-      subItems: ['Overview & Quick Stats']
+      subItems: [t('farm_overview', language)]
     },
     { 
       id: 'lab', 
-      label: 'Lab & Diagnostics', 
+      label: t('lab', language), 
       icon: FlaskConical,
       color: 'purple',
       subItems: ['Test Reports', 'Lab Data']
     },
     { 
       id: 'education', 
-      label: 'Education Hub', 
+      label: t('education', language), 
       icon: GraduationCap,
       color: 'amber',
       subItems: ['Educational Resources', 'Government Policies', 'Community Platform']
@@ -113,14 +115,14 @@ const allMenuItems = {
   lab: [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: t('dashboard', language), 
       icon: LayoutDashboard,
       color: 'blue',
-      subItems: ['Overview & Quick Stats']
+      subItems: [t('farm_overview', language)]
     },
     { 
       id: 'lab', 
-      label: 'Lab & Diagnostics', 
+      label: t('lab', language), 
       icon: FlaskConical,
       color: 'purple',
       subItems: ['Test Reports', 'Lab Data']
@@ -129,34 +131,36 @@ const allMenuItems = {
   dispatcher: [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: t('dashboard', language), 
       icon: LayoutDashboard,
       color: 'blue',
-      subItems: ['Overview & Quick Stats']
+      subItems: [t('farm_overview', language)]
     },
     { 
       id: 'pharmacy', 
-      label: 'Pharmacy', 
+      label: t('pharmacy', language), 
       icon: Pill,
       color: 'teal',
-      subItems: ['Medicines', 'Vaccines', 'Supplies']
+      subItems: [t('medicine', language), t('vaccinations', language), 'Supplies']
     },
     { 
       id: 'emergency', 
-      label: 'Emergency Services', 
+      label: t('emergency', language), 
       icon: Truck,
       color: 'red',
       subItems: ['Quick Help & SOS']
     },
   ]
-}
+})
 
 export default function Sidebar({ activeSection, setActiveSection, isOpen, setIsOpen, user }) {
+  const { language } = useLanguage()
   const [expandedItems, setExpandedItems] = useState({})
   
   // Get user role from localStorage or user metadata
   const userRole = localStorage.getItem('userRole') || user?.user_metadata?.role || 'farmer'
   const normalizedRole = userRole === 'doctor' ? 'veterinarian' : userRole === 'lab_employee' ? 'lab' : userRole
+  const allMenuItems = getMenuItems(language)
   const menuItems = allMenuItems[normalizedRole] || allMenuItems.farmer
 
   const toggleExpanded = (itemId) => {
@@ -187,9 +191,17 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
               <div key={item.id} className="mb-2">
                 <button
                   onClick={() => {
+                    console.log('Sidebar navigation clicked:', item.id, 'Role:', normalizedRole)
                     const url = item.id === 'dashboard' ? `/${normalizedRole}/dashboard` : `/${normalizedRole}/dashboard/${item.id}`
+                    console.log('Navigating to:', url)
+                    
+                    // Update active section first
+                    setActiveSection(item.id)
+                    
+                    // Then update URL
                     window.history.pushState({}, '', url)
                     window.dispatchEvent(new PopStateEvent('popstate'))
+                    
                     toggleExpanded(item.id)
                     if (window.innerWidth < 1024) setIsOpen(false)
                   }}
@@ -216,9 +228,17 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
                         key={index} 
                         onClick={(e) => {
                           e.stopPropagation()
+                          console.log('Sidebar sub-item clicked:', subItem, 'for:', item.id)
+                          
+                          // Update active section
+                          setActiveSection(item.id)
+                          
                           const url = item.id === 'dashboard' ? `/${normalizedRole}/dashboard` : `/${normalizedRole}/dashboard/${item.id}`
+                          console.log('Sub-item navigating to:', url)
+                          
                           window.history.pushState({}, '', url)
                           window.dispatchEvent(new PopStateEvent('popstate'))
+                          
                           if (item.id === 'education') {
                             const tabMap = {
                               'Educational Resources': 'resources',
@@ -263,7 +283,7 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 bg-white border border-gray-200"
           >
             <LogOut className="w-5 h-5" />
-            {isOpen && <span className="font-medium text-sm">Logout</span>}
+            {isOpen && <span className="font-medium text-sm">{t('logout', language)}</span>}
           </button>
         </div>
       </div>

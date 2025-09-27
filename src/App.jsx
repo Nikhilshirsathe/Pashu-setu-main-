@@ -11,7 +11,14 @@ import Education from './pages/Education'
 import Alerts from './pages/Alerts'
 import Pharmacy from './pages/Pharmacy'
 import Records from './pages/Records'
+import MaternityCare from './components/MaternityCare'
+import CallNotification from './components/CallNotification'
+import VideoCall from './components/VideoCall'
+import VoiceAssistant from './components/VoiceAssistant'
 import { supabase } from './lib/supabase'
+import { getNotifications, markAsRead } from './lib/notificationService'
+import { varhaFunctions } from './lib/varhaFunctions'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 const pages = {
   dashboard: { component: Dashboard, title: 'Dashboard' },
@@ -30,8 +37,39 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
   const [currentPage, setCurrentPage] = useState('auth')
+  const [incomingCall, setIncomingCall] = useState(null)
+  const [activeVideoCall, setActiveVideoCall] = useState(null)
+  const [previousPath, setPreviousPath] = useState(null)
+  const [showMaternityCare, setShowMaternityCare] = useState(false)
 
   useEffect(() => {
+    // Check localStorage for authentication first
+    const userRole = localStorage.getItem('userRole')
+    const userEmail = localStorage.getItem('userEmail')
+    
+    if (userRole && userEmail) {
+      setIsAuthenticated(true)
+      setUser({ email: userEmail, user_metadata: { role: userRole } })
+      
+      // Set up notification listener for veterinarians
+      if (userRole === 'veterinarian') {
+        // Real-time notifications will be handled in Consultation.jsx
+        console.log('Veterinarian logged in, notifications enabled')
+      }
+    }
+    
+    // Initialize VARHA integration
+    varhaFunctions.setCallbacks({
+      onNavigate: (section, path) => {
+        setActiveSection(section)
+        window.history.pushState({}, '', path)
+      },
+      onStartVideoCall: (callData) => {
+        setPreviousPath(window.location.pathname)
+        setActiveVideoCall(callData)
+      }
+    })
+    varhaFunctions.init()
     
     // Check URL for routing
     const checkRoute = () => {
@@ -40,19 +78,28 @@ export default function App() {
         setCurrentPage('auth')
       } else if (path === '/signup') {
         setCurrentPage('signup')
+      } else if (path === '/maternity-care') {
+        setShowMaternityCare(true)
+        setCurrentPage('dashboard')
       } else if (path.match(/^\/(farmer|veterinary|volunteer|lab|dispatcher)(\/dashboard)?/)) {
         const pathParts = path.split('/').filter(p => p)
         const role = pathParts[0]
         const section = pathParts[2] || 'dashboard'
         
+        console.log('Route matched:', { path, role, section, pathParts })
+        
         // Verify user role matches URL
         const userRole = localStorage.getItem('userRole')
+        console.log('User role from localStorage:', userRole)
+        
         if (userRole && userRole !== role) {
+          console.log('Role mismatch, redirecting to:', `/${userRole}/dashboard`)
           // Redirect to correct role dashboard
           window.history.pushState({}, '', `/${userRole}/dashboard`)
           return
         }
         
+        console.log('Setting active section to:', section)
         setActiveSection(section)
         setCurrentPage('dashboard')
       } else if (path.startsWith('/dashboard')) {
@@ -122,12 +169,65 @@ export default function App() {
     return () => {
       subscription.unsubscribe()
       window.removeEventListener('popstate', checkRoute)
+      // Cleanup handled by individual components
     }
   }, [])
 
   // Show auth pages if not authenticated
   if (!isAuthenticated) {
     return currentPage === 'signup' ? <Signup /> : <Auth />
+  }
+
+  // Handle maternity care view
+  if (showMaternityCare) {
+    return (
+      <LanguageProvider>
+        <MaternityCare onBack={() => {
+          setShowMaternityCare(false)
+          const userRole = localStorage.getItem('userRole')
+          window.history.pushState({}, '', `/${userRole}/dashboard`)
+        }} />
+      </LanguageProvider>
+    )
+  }
+
+  // Handle active video call
+  if (activeVideoCall) {
+    return (
+      <VideoCall 
+        roomId={activeVideoCall.roomId}
+        onEndCall={() => {
+          setActiveVideoCall(null)
+          // Restore previous URL if available
+          if (previousPath) {
+            window.history.pushState({}, '', previousPath)
+            // Re-parse the route to set correct activeSection
+            const pathParts = previousPath.split('/').filter(p => p)
+            const section = pathParts[2] || 'dashboard'
+            setActiveSection(section)
+          }
+        }}
+        userRole={localStorage.getItem('userRole')}
+        userEmail={localStorage.getItem('userEmail')}
+      />
+    )
+  }
+
+  const handleAcceptCall = () => {
+    if (incomingCall) {
+      // Store current path before starting video call
+      setPreviousPath(window.location.pathname)
+      setActiveVideoCall({ roomId: incomingCall.roomId })
+      markAsRead(incomingCall.id)
+      setIncomingCall(null)
+    }
+  }
+
+  const handleDeclineCall = () => {
+    if (incomingCall) {
+      markAsRead(incomingCall.id)
+      setIncomingCall(null)
+    }
   }
 
   // Redirect authenticated users to role-based dashboard, unauthenticated to login
@@ -145,26 +245,45 @@ export default function App() {
   const CurrentPage = pages[activeSection].component
 
   return (
-    <div className="min-h-screen">
-      <Sidebar 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection}
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        user={user}
-      />
-      
-      <Header 
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        user={user}
-      />
-      
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'ml-0'}`}>
-        <main className="p-6 min-h-screen mt-20">
-          <CurrentPage />
-        </main>
+    <LanguageProvider>
+      <div className="min-h-screen">
+        <Sidebar 
+          activeSection={activeSection} 
+          setActiveSection={setActiveSection}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+          user={user}
+        />
+        
+        <Header 
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+          user={user}
+        />
+        
+        <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'ml-0'}`}>
+          <main className="p-6 min-h-screen mt-20">
+            <CurrentPage onStartVideoCall={(callData) => {
+              console.log('Video call started from App:', callData)
+              // Store current path before starting video call
+              setPreviousPath(window.location.pathname)
+              setActiveVideoCall(callData)
+            }} />
+          </main>
+        </div>
+
+        {/* Incoming Call Notification */}
+        {incomingCall && (
+          <CallNotification 
+            notification={incomingCall}
+            onAccept={handleAcceptCall}
+            onDecline={handleDeclineCall}
+          />
+        )}
+        
+        {/* Voice Assistant */}
+        <VoiceAssistant />
       </div>
-    </div>
+    </LanguageProvider>
   )
 }

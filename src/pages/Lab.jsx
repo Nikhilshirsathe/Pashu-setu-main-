@@ -1,122 +1,332 @@
-import { Truck, ClipboardCheck, FlaskConical, FileText, BarChart3, Clock } from 'lucide-react'
+import { TestTube, Calendar, Clock, CheckCircle, AlertCircle, Truck, FileText, Plus } from 'lucide-react'
+import { useState } from 'react'
 
 export default function Lab() {
-  const services = [
+  const [activeTab, setActiveTab] = useState('request')
+
+  const sampleRequests = [
     {
-      icon: Truck,
-      title: 'Sample Pickup',
-      description: 'Request sample collection and delivery to laboratory',
-      action: 'Request Pickup',
-      color: 'purple',
-      stats: 'Same day pickup'
+      id: 1,
+      animalName: 'Cow 1',
+      testType: 'Blood Test',
+      status: 'pending',
+      requestDate: '2024-01-15',
+      expectedDate: '2024-01-17'
     },
     {
-      icon: ClipboardCheck,
-      title: 'Lab Management',
-      description: 'Test recording, digital reports, and result notifications',
-      action: 'Manage Tests',
-      color: 'indigo',
-      stats: 'Digital reports'
-    },
-    {
-      icon: FlaskConical,
-      title: 'Test Processing',
-      description: 'Advanced diagnostic testing with certified laboratories',
-      action: 'View Tests',
-      color: 'teal',
-      stats: '24-48hr results'
-    },
-    {
-      icon: FileText,
-      title: 'Report Generation',
-      description: 'Automated report generation and delivery system',
-      action: 'Generate Report',
-      color: 'blue',
-      stats: 'Instant delivery'
+      id: 2,
+      animalName: 'Cow 2',
+      testType: 'Milk Quality',
+      status: 'completed',
+      requestDate: '2024-01-10',
+      completedDate: '2024-01-12'
     }
   ]
 
+  const testTypes = [
+    { id: 'blood', name: 'Blood Test', price: 420, originalPrice: 500, discount: 16, duration: '2-3 days' },
+    { id: 'milk', name: 'Milk Quality', price: 240, originalPrice: 300, discount: 20, duration: '1-2 days' },
+    { id: 'urine', name: 'Urine Analysis', price: 320, originalPrice: 400, discount: 20, duration: '2-3 days' },
+    { id: 'fecal', name: 'Fecal Examination', price: 280, originalPrice: 350, discount: 20, duration: '1-2 days' },
+    { id: 'pregnancy', name: 'Pregnancy Test', price: 180, originalPrice: 200, discount: 10, duration: '1 day' },
+    { id: 'disease', name: 'Disease Screening', price: 350, originalPrice: 450, discount: 22, duration: '3-4 days' }
+  ]
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-          Laboratory & Diagnostics
+    <div style={{ backgroundColor: '#f9fafa', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '25px' }}>
+        <h1 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '5px' }}>
+          Lab & Diagnostics
         </h1>
-        <p className="text-neutral-600 text-lg">Comprehensive lab services and sample management</p>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card p-6 text-center hover-lift">
-          <BarChart3 className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-          <h3 className="font-bold text-2xl text-neutral-800">500+</h3>
-          <p className="text-sm text-neutral-600">Tests Processed</p>
-        </div>
-        <div className="card p-6 text-center hover-lift">
-          <Clock className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
-          <h3 className="font-bold text-2xl text-neutral-800">24hr</h3>
-          <p className="text-sm text-neutral-600">Avg Turnaround</p>
-        </div>
-        <div className="card p-6 text-center hover-lift">
-          <FlaskConical className="w-8 h-8 text-teal-600 mx-auto mb-3" />
-          <h3 className="font-bold text-2xl text-neutral-800">99%</h3>
-          <p className="text-sm text-neutral-600">Accuracy Rate</p>
+        <p style={{ fontSize: '14px', color: '#6b7280' }}>
+          Affordable lab tests with up to 30% discount for farmers
+        </p>
+        <div style={{ 
+          background: '#fef3c7', 
+          border: '1px solid #fde68a',
+          padding: '8px 12px', 
+          borderRadius: '6px', 
+          marginTop: '8px',
+          display: 'inline-block'
+        }}>
+          <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '500' }}>
+            💰 Special Pricing for Farmers
+          </span>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {services.map((service, index) => {
-          const Icon = service.icon
-          return (
-            <div key={index} className="card p-8 hover-lift hover-glow group">
-              <div className="flex items-start justify-between mb-6">
-                <div className={`bg-gradient-to-br from-${service.color}-100 to-${service.color}-200 p-4 rounded-2xl group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-8 h-8 text-${service.color}-600`} />
-                </div>
-                <div className="badge badge-primary">
-                  {service.stats}
-                </div>
-              </div>
-              
-              <h3 className="text-2xl font-bold text-neutral-800 mb-3">{service.title}</h3>
-              <p className="text-neutral-600 mb-6 leading-relaxed">{service.description}</p>
-              
-              <button className="btn btn-primary w-full">
-                {service.action}
-              </button>
-            </div>
-          )
-        })}
+
+      {/* Tab Navigation */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '4px', 
+        marginBottom: '25px',
+        background: '#f3f4f6',
+        padding: '4px',
+        borderRadius: '8px',
+        width: 'fit-content'
+      }}>
+        <button
+          onClick={() => setActiveTab('request')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            background: activeTab === 'request' ? '#fff' : 'transparent',
+            color: activeTab === 'request' ? '#1f2937' : '#6b7280',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          Request Tests
+        </button>
+        <button
+          onClick={() => setActiveTab('samples')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            background: activeTab === 'samples' ? '#fff' : 'transparent',
+            color: activeTab === 'samples' ? '#1f2937' : '#6b7280',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          My Samples
+        </button>
+        <button
+          onClick={() => setActiveTab('results')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            background: activeTab === 'results' ? '#fff' : 'transparent',
+            color: activeTab === 'results' ? '#1f2937' : '#6b7280',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          Results
+        </button>
       </div>
-      
-      <div className="card p-8">
-        <h3 className="text-2xl font-bold text-neutral-800 mb-6">Recent Lab Results</h3>
-        <div className="space-y-4">
-          {[
-            { test: 'Blood Analysis', animal: 'Cow #123', date: '2 days ago', status: 'Completed', result: 'Normal' },
-            { test: 'Urine Test', animal: 'Buffalo #456', date: '3 days ago', status: 'Completed', result: 'Abnormal' },
-            { test: 'Milk Quality', animal: 'Cow #789', date: '5 days ago', status: 'Processing', result: 'Pending' }
-          ].map((result, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-colors">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <FlaskConical className="w-6 h-6 text-white" />
+
+      {/* Quick Actions */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: '15px',
+        marginBottom: '30px'
+      }}>
+        <div className="card" style={{ cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <TestTube style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Quick Test Request</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Request common lab tests</p>
+        </div>
+
+        <div className="card" style={{ cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <Truck style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Sample Pickup</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Schedule collection service</p>
+        </div>
+
+        <div className="card" style={{ cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <FileText style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Digital Reports</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Access test results online</p>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'request' && (
+        <div>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '20px', color: '#1f2937' }}>
+            Available Lab Tests
+          </h2>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+            gap: '20px',
+            marginBottom: '30px'
+          }}>
+            {testTypes.map((test) => (
+              <div key={test.id} className="card">
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>
+                    {test.name}
+                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '14px', color: '#9ca3af', textDecoration: 'line-through' }}>
+                          ₹{test.originalPrice}
+                        </span>
+                        <span style={{ fontSize: '18px', fontWeight: '700', color: '#059669' }}>
+                          ₹{test.price}
+                        </span>
+                      </div>
+                      <div style={{ 
+                        background: '#fef3c7', 
+                        color: '#d97706', 
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        fontSize: '10px', 
+                        fontWeight: '600',
+                        marginTop: '4px',
+                        width: 'fit-content'
+                      }}>
+                        {test.discount}% OFF
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {test.duration}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-neutral-800">{result.test}</p>
-                  <p className="text-sm text-neutral-600">{result.animal} • {result.date}</p>
+                
+                <button style={{
+                  width: '100%',
+                  padding: '8px 16px',
+                  background: '#059669',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}>
+                  <Plus style={{ width: '14px', height: '14px' }} />
+                  Request Test
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'samples' && (
+        <div className="card">
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
+            Sample Requests
+          </h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {sampleRequests.map((request) => (
+              <div key={request.id} style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                padding: '16px',
+                background: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #f3f4f6'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ 
+                    background: request.status === 'completed' ? '#dcfce7' : '#fef3c7', 
+                    padding: '8px', 
+                    borderRadius: '8px' 
+                  }}>
+                    {request.status === 'completed' ? 
+                      <CheckCircle style={{ width: '20px', height: '20px', color: '#059669' }} /> :
+                      <Clock style={{ width: '20px', height: '20px', color: '#d97706' }} />
+                    }
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>
+                      {request.testType} - {request.animalName}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      Requested: {new Date(request.requestDate).toLocaleDateString()}
+                    </p>
+                    {request.status === 'pending' && (
+                      <p style={{ fontSize: '12px', color: '#d97706' }}>
+                        Expected: {new Date(request.expectedDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div style={{ 
+                  background: request.status === 'completed' ? '#dcfce7' : '#fef3c7',
+                  color: request.status === 'completed' ? '#059669' : '#d97706',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  {request.status === 'completed' ? 'Completed' : 'Pending'}
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className={`badge ${
-                  result.result === 'Normal' ? 'badge-success' :
-                  result.result === 'Abnormal' ? 'badge-danger' : 'badge-warning'
-                }`}>
-                  {result.result}
-                </div>
-                <button className="btn btn-outline text-sm py-1 px-3">View Report</button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'results' && (
+        <div className="card">
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
+            Test Results
+          </h3>
+          
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px',
+            color: '#6b7280'
+          }}>
+            <FileText style={{ width: '48px', height: '48px', margin: '0 auto 16px', color: '#d1d5db' }} />
+            <p style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>No results available</p>
+            <p style={{ fontSize: '14px' }}>Test results will appear here once completed</p>
+          </div>
+        </div>
+      )}
+
+      {/* Lab Services Info */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: '20px',
+        marginTop: '30px'
+      }}>
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <Truck style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Free Pickup</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.4' }}>
+            We provide free sample collection from your farm. Schedule pickup at your convenience.
+          </p>
+        </div>
+
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <TestTube style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Certified Lab</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.4' }}>
+            All tests performed in NABL accredited laboratories with quality assurance.
+          </p>
+        </div>
+
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <Clock style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Quick Results</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.4' }}>
+            Fast turnaround time with digital reports delivered directly to your dashboard.
+          </p>
         </div>
       </div>
     </div>

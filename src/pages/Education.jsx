@@ -1,840 +1,762 @@
-import { useState, useEffect } from 'react'
-import { BookOpen, Scale, Users, Search, Calendar, Download, MessageCircle, ThumbsUp, Eye, FileText, Video, Image, Plus, Send } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { BookOpen, Play, Download, Star, Clock, Users, Search, Filter } from 'lucide-react'
+import { useState } from 'react'
 
 export default function Education() {
-  const [activeTab, setActiveTab] = useState('resources')
   const [searchTerm, setSearchTerm] = useState('')
-  const [resources, setResources] = useState([])
-  const [policies, setPolicies] = useState([])
-  const [communityPosts, setCommunityPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [newPost, setNewPost] = useState({ title: '', content: '', category: 'Experience Sharing' })
-  const [showNewPostForm, setShowNewPostForm] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState(null)
-  const [selectedArticle, setSelectedArticle] = useState(null)
-  const [selectedPost, setSelectedPost] = useState(null)
-  const [newComment, setNewComment] = useState('')
-  const [postComments, setPostComments] = useState({})
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [showLearningPath, setShowLearningPath] = useState(null)
+  const [activeCourse, setActiveCourse] = useState(null)
+  const [courseProgress, setCourseProgress] = useState({})
+  const [currentLesson, setCurrentLesson] = useState(0)
 
-  useEffect(() => {
-    // Check for selected tab from sidebar
-    const savedTab = localStorage.getItem('educationTab')
-    if (savedTab) {
-      setActiveTab(savedTab)
-      localStorage.removeItem('educationTab')
-    }
-    
-    // Listen for tab changes from sidebar
-    const handleTabChange = () => {
-      const savedTab = localStorage.getItem('educationTab')
-      if (savedTab) {
-        setActiveTab(savedTab)
-        localStorage.removeItem('educationTab')
-      }
-    }
-    
-    window.addEventListener('educationTabChange', handleTabChange)
-    fetchData()
-    
-    return () => {
-      window.removeEventListener('educationTabChange', handleTabChange)
-    }
-  }, [])
+  const categories = [
+    { id: 'all', name: 'All Topics', count: 24 },
+    { id: 'health', name: 'Animal Health', count: 8 },
+    { id: 'nutrition', name: 'Nutrition', count: 6 },
+    { id: 'breeding', name: 'Breeding', count: 5 },
+    { id: 'management', name: 'Farm Management', count: 5 }
+  ]
 
-  const fetchData = async () => {
-    try {
-      const [resourcesRes, policiesRes, postsRes] = await Promise.all([
-        supabase.from('educational_resources').select('*').order('created_at', { ascending: false }),
-        supabase.from('government_policies').select('*').order('created_at', { ascending: false }),
-        supabase.from('community_posts').select('*').order('created_at', { ascending: false })
-      ])
-      
-      // Check if we got data from database
-      if (resourcesRes.data && resourcesRes.data.length > 0) {
-        setResources(resourcesRes.data)
-      } else {
-        setResources(getFallbackResources())
-      }
-      
-      if (policiesRes.data && policiesRes.data.length > 0) {
-        setPolicies(policiesRes.data)
-      } else {
-        setPolicies(getFallbackPolicies())
-      }
-      
-      if (postsRes.data && postsRes.data.length > 0) {
-        setCommunityPosts(postsRes.data)
-      } else {
-        setCommunityPosts(getFallbackPosts())
-      }
-      
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      // Use fallback data if database fails
-      setResources(getFallbackResources())
-      setPolicies(getFallbackPolicies())
-      setCommunityPosts(getFallbackPosts())
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getFallbackResources = () => [
+  const courses = [
     {
-      id: '1',
-      title: 'Seasonal Disease Prevention in Cattle',
-      type: 'article',
-      category: 'Disease Prevention',
-      description: 'Comprehensive guide on preventing common seasonal diseases in cattle including FMD, mastitis, and respiratory infections.',
-      author: 'Dr. Rajesh Kumar',
-      created_at: '2024-01-15',
-      views: 1250,
-      likes: 89,
-      content: 'SEASONAL DISEASE PREVENTION IN CATTLE\n\nIntroduction:\nSeasonal diseases pose significant threats to cattle health and farm productivity. Understanding prevention strategies is crucial for maintaining healthy herds year-round.\n\nCommon Seasonal Diseases:\n\n1. FOOT AND MOUTH DISEASE (FMD)\n- Peak season: Monsoon and post-monsoon\n- Symptoms: Fever, blisters on mouth, feet, and udder\n- Prevention: Regular vaccination, quarantine new animals, disinfect premises\n\n2. MASTITIS\n- Peak season: Summer and rainy season\n- Symptoms: Swollen udder, abnormal milk, fever\n- Prevention: Proper milking hygiene, dry cow therapy, clean housing\n\n3. RESPIRATORY INFECTIONS\n- Peak season: Winter and monsoon\n- Symptoms: Coughing, nasal discharge, difficulty breathing\n- Prevention: Adequate ventilation, avoid overcrowding, vaccination\n\n4. TICK-BORNE DISEASES\n- Peak season: Monsoon\n- Symptoms: Fever, anemia, loss of appetite\n- Prevention: Regular tick control, use of acaricides, pasture management\n\nGeneral Prevention Strategies:\n\n• Vaccination Schedule: Follow recommended vaccination calendar\n• Biosecurity: Quarantine new animals for 21 days\n• Nutrition: Provide balanced feed with adequate vitamins and minerals\n• Housing: Ensure proper ventilation and drainage\n• Water Quality: Provide clean, fresh water daily\n• Regular Health Checks: Monitor animals daily for early signs\n• Record Keeping: Maintain detailed health records\n\nSeasonal Management:\n\nSUMMER:\n- Provide shade and adequate water\n- Monitor for heat stress\n- Increase mastitis prevention measures\n\nMONSOON:\n- Improve drainage around housing\n- Increase tick and fly control\n- Monitor for FMD and respiratory issues\n\nWINTER:\n- Provide windbreaks\n- Ensure adequate nutrition\n- Monitor for pneumonia\n\nConclusion:\nProactive seasonal disease prevention through vaccination, proper management, and regular veterinary consultation is essential for maintaining cattle health and farm profitability. Early detection and prompt treatment remain key to successful disease management.'
-    },
-    {
-      id: '2',
-      title: 'Cattle Vaccination Techniques',
+      id: 1,
+      title: 'Basic Animal Health Management',
+      category: 'health',
+      duration: '2 hours',
+      rating: 4.8,
+      students: 1250,
       type: 'video',
-      category: 'Vaccination',
-      description: 'Professional demonstration of proper cattle vaccination techniques by veterinary experts.',
-      author: 'Veterinary Training Institute',
-      created_at: '2025-01-12',
-      views: 2100,
-      likes: 156,
-      videoId: 'NeNqJU_Sf9A',
-      duration: '12:45'
-    },
-    {
-      id: '3',
-      title: 'Dairy Farm Management',
-      type: 'video',
-      category: 'Farm Management',
-      description: 'Complete guide to modern dairy farm management including hygiene, feeding, and health monitoring.',
-      author: 'Agricultural Extension Service',
-      created_at: '2025-01-10',
-      views: 1850,
-      likes: 134,
-      videoId: 'eLKScfjYhac',
-      duration: '18:30'
-    }
-  ]
-
-  const getFallbackPolicies = () => [
-    {
-      id: '1',
-      title: 'National Livestock Mission (NLM) Guidelines 2025',
-      department: 'Ministry of Fisheries, Animal Husbandry & Dairying',
-      created_at: '2025-01-18',
-      status: 'Active',
-      summary: 'Comprehensive guidelines for livestock development, breed improvement, and infrastructure development under NLM.',
-      impact: 'High',
-      pdf_url: 'https://dahd.nic.in/sites/default/filess/NLM%20Guidelines.pdf'
-    },
-    {
-      id: '2',
-      title: 'Livestock Health & Disease Control (LH&DC) Scheme',
-      department: 'Department of Animal Husbandry & Dairying',
-      created_at: '2025-01-14',
-      status: 'Active',
-      summary: 'Central sector scheme for prevention and control of animal diseases including FMD, PPR, and Brucellosis.',
-      impact: 'High',
-      pdf_url: 'https://dahd.nic.in/sites/default/filess/LH%26DC%20Guidelines.pdf'
-    },
-    {
-      id: '3',
-      title: 'Rashtriya Gokul Mission Guidelines',
-      department: 'Department of Animal Husbandry & Dairying',
-      created_at: '2025-01-08',
-      status: 'Active',
-      summary: 'Guidelines for indigenous cattle breed development and conservation through Gokul Grams and breeding programs.',
-      impact: 'Medium',
-      pdf_url: 'https://dahd.nic.in/sites/default/filess/RGM%20Guidelines.pdf'
-    },
-    {
-      id: '4',
-      title: 'Animal Quarantine and Certification Services Rules',
-      department: 'Ministry of Agriculture & Farmers Welfare',
-      created_at: '2025-01-05',
-      status: 'Active',
-      summary: 'Updated rules for import/export of animals and animal products, quarantine procedures, and health certification.',
-      impact: 'Medium',
-      pdf_url: 'https://dahd.nic.in/sites/default/filess/AQCS%20Rules.pdf'
-    }
-  ]
-
-  const getFallbackPosts = () => [
-    {
-      id: '1',
-      author_name: 'Ramesh Patel',
-      author_role: 'Dairy Farmer',
-      author_location: 'Gujarat',
-      title: 'Successful Treatment of Mastitis Using Herbal Remedies',
-      content: 'I want to share my experience treating mastitis in my dairy cows using traditional herbal remedies combined with modern veterinary care.',
-      created_at: '2025-01-16',
-      likes: 45,
-      comments_count: 12,
-      category: 'Experience Sharing'
-    },
-    {
-      id: '2',
-      author_name: 'Dr. Meera Singh',
-      author_role: 'Veterinarian',
-      author_location: 'Punjab',
-      title: 'Early Detection Signs of Foot and Mouth Disease',
-      content: 'As we enter the monsoon season, I want to highlight the early warning signs of FMD that every farmer should watch for.',
-      created_at: '2025-01-13',
-      likes: 78,
-      comments_count: 23,
-      category: 'Expert Advice'
-    }
-  ]
-
-  const handleLike = async (type, id) => {
-    try {
-      if (type === 'resource') {
-        const resource = resources.find(r => r.id === id)
-        await supabase.from('educational_resources').update({ likes: resource.likes + 1 }).eq('id', id)
-      } else if (type === 'post') {
-        const post = communityPosts.find(p => p.id === id)
-        await supabase.from('community_posts').update({ likes: post.likes + 1 }).eq('id', id)
-      }
-    } catch (error) {
-      console.error('Error updating likes:', error)
-    }
-    
-    // Update local state regardless of database success
-    if (type === 'resource') {
-      setResources(prev => prev.map(r => r.id === id ? { ...r, likes: r.likes + 1 } : r))
-    } else if (type === 'post') {
-      setCommunityPosts(prev => prev.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p))
-    }
-  }
-
-  const handlePolicyDownload = (policy) => {
-    // Generate PDF content as HTML and convert to PDF
-    const pdfContent = `
-      <html>
-        <head>
-          <title>${policy.title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .title { font-size: 18px; font-weight: bold; margin: 10px 0; }
-            .department { font-size: 14px; color: #666; }
-            .section { margin: 20px 0; }
-            .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-            .content { line-height: 1.6; }
-            ul { margin: 10px 0; padding-left: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>GOVERNMENT OF INDIA</h1>
-            <div class="department">${policy.department}</div>
-          </div>
-          
-          <div class="title">${policy.title}</div>
-          
-          <div class="section">
-            <strong>Status:</strong> ${policy.status}<br>
-            <strong>Impact Level:</strong> ${policy.impact}<br>
-            <strong>Published:</strong> January 2025
-          </div>
-          
-          <div class="section">
-            <div class="section-title">EXECUTIVE SUMMARY</div>
-            <div class="content">${policy.summary}</div>
-          </div>
-          
-          <div class="section">
-            <div class="section-title">DETAILED GUIDELINES</div>
-            <div class="content">
-              <h4>1. OBJECTIVE</h4>
-              <p>This policy aims to strengthen the livestock sector through comprehensive guidelines and support mechanisms for farmers and stakeholders.</p>
-              
-              <h4>2. SCOPE</h4>
-              <ul>
-                <li>Coverage of all livestock categories</li>
-                <li>Implementation across all states and union territories</li>
-                <li>Integration with existing government schemes</li>
-              </ul>
-              
-              <h4>3. KEY PROVISIONS</h4>
-              <ul>
-                <li>Financial assistance for infrastructure development</li>
-                <li>Technical support and training programs</li>
-                <li>Disease prevention and control measures</li>
-                <li>Quality assurance and certification</li>
-              </ul>
-              
-              <h4>4. IMPLEMENTATION</h4>
-              <ul>
-                <li>State-wise implementation through designated agencies</li>
-                <li>Regular monitoring and evaluation</li>
-                <li>Stakeholder consultation and feedback</li>
-              </ul>
-              
-              <h4>5. BENEFITS</h4>
-              <ul>
-                <li>Enhanced livestock productivity</li>
-                <li>Improved farmer income</li>
-                <li>Better animal health management</li>
-                <li>Sustainable development practices</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div class="section">
-            <small>
-              <p>For more information, visit: <a href="https://dahd.nic.in">https://dahd.nic.in</a></p>
-              <p>This document is generated for educational purposes.</p>
-              <p>For official policy documents, please visit the respective government websites.</p>
-            </small>
-          </div>
-        </body>
-      </html>
-    `
-    
-    // Create blob and download
-    const blob = new Blob([pdfContent], { type: 'text/html' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${policy.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_policy.html`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-    
-    // Also trigger print dialog for PDF conversion
-    const printWindow = window.open('', '_blank')
-    printWindow.document.write(pdfContent)
-    printWindow.document.close()
-    setTimeout(() => {
-      printWindow.print()
-    }, 500)
-  }
-
-  const handleCommentClick = (post) => {
-    if (!postComments[post.id]) {
-      const sampleComments = [
-        {
-          id: 1,
-          author: 'Priya Sharma',
-          role: 'Veterinarian',
-          content: 'Great insights! I\'ve seen similar results with herbal treatments in my practice.',
-          time: '2 hours ago'
-        },
-        {
-          id: 2,
-          author: 'Amit Kumar',
-          role: 'Dairy Farmer',
-          content: 'Thank you for sharing this. Which herbs did you use specifically?',
-          time: '4 hours ago'
-        }
+      description: 'Learn fundamental principles of keeping your animals healthy',
+      progress: courseProgress[1] || 0,
+      lessons: [
+        { id: 1, title: 'Introduction to Animal Health', duration: '15 min', content: 'Animal health is fundamental to successful farming. Healthy animals are more productive, have better reproduction rates, and provide higher quality products. This lesson covers the basic principles of animal health management, including understanding normal behavior, recognizing signs of good health, and the economic importance of maintaining healthy livestock. Key indicators of healthy animals include bright eyes, good appetite, normal body temperature (38-39°C for cattle), regular breathing, and active behavior.', videoUrl: 'https://youtu.be/uiC_-RTGTLM?si=jlsuuj1Cs78uJxNG' },
+        { id: 2, title: 'Daily Health Monitoring', duration: '20 min', content: 'Daily health checks are essential for early disease detection. Start by observing animals from a distance to note their behavior, posture, and movement. Look for signs like isolation from the herd, reduced appetite, abnormal discharge from eyes or nose, limping, or changes in milk production. Check body temperature using a rectal thermometer - normal ranges are 38-39°C for cattle, 38.5-40°C for sheep/goats. Monitor breathing rate (12-20 breaths per minute for cattle) and check for coughing or labored breathing.', videoUrl: 'https://youtu.be/Ck1fnrUMFKE?si=J1_BTDvz9ZT6rSdT' },
+        { id: 3, title: 'Common Health Issues', duration: '25 min', content: 'The most common health problems in farm animals include: 1) Mastitis - inflammation of mammary glands causing reduced milk quality and quantity. 2) Foot and Mouth Disease - highly contagious viral disease causing fever and blisters. 3) Respiratory infections - causing coughing, nasal discharge, and breathing difficulties. 4) Digestive disorders like bloat and acidosis from improper feeding. 5) Parasitic infections both internal (worms) and external (ticks, lice). Early recognition and prompt treatment are crucial for preventing spread and minimizing economic losses.', videoUrl: 'https://youtu.be/nV7lk3lht60?si=te81W03Vtl7tEMhs' },
+        { id: 4, title: 'When to Call a Vet', duration: '15 min', content: 'Call a veterinarian immediately for: High fever (above 40°C), difficulty breathing, severe diarrhea or constipation, inability to stand or walk, signs of pain like grinding teeth or restlessness, sudden drop in milk production, abnormal discharge, loss of appetite for more than 24 hours, or any unusual behavior. For pregnant animals, call for prolonged labor, retained placenta, or signs of pregnancy complications. Emergency situations require immediate veterinary attention to prevent death or permanent damage.', videoUrl: 'https://youtu.be/qjLHifQJxAc?si=SgKZlo2vJ8Y2bviR' },
+        { id: 5, title: 'Preventive Care', duration: '20 min', content: 'Prevention is always better than treatment. Key preventive measures include: 1) Vaccination schedules - FMD every 6 months, Brucellosis before breeding, annual BVD vaccination. 2) Regular deworming every 3-4 months. 3) Proper nutrition with balanced minerals and vitamins. 4) Clean water supply changed daily. 5) Good hygiene in housing with regular cleaning and disinfection. 6) Quarantine new animals for 2-3 weeks. 7) Maintain proper ventilation and avoid overcrowding. 8) Regular hoof trimming and body condition scoring.', videoUrl: 'https://youtu.be/avY3IjwqdPQ?si=T7Kdlt1t4stLaGwa' }
       ]
-      setPostComments(prev => ({ ...prev, [post.id]: sampleComments }))
+    },
+    {
+      id: 2,
+      title: 'Cattle Nutrition Guidelines',
+      category: 'nutrition',
+      duration: '1.5 hours',
+      rating: 4.6,
+      students: 890,
+      type: 'document',
+      description: 'Complete guide to proper cattle feeding and nutrition',
+      progress: courseProgress[2] || 0,
+      lessons: [
+        { id: 1, title: 'Nutritional Requirements', duration: '20 min', content: 'Cattle require six essential nutrients: water, carbohydrates, proteins, fats, vitamins, and minerals. Adult cattle need 2-3% of their body weight in dry matter daily. Protein requirements vary: 8-10% for maintenance, 12-14% for lactating cows, 14-16% for growing animals. Energy needs are met through carbohydrates (50-70% of diet) from grasses, hay, and grains. Essential minerals include calcium, phosphorus (2:1 ratio), salt, and trace elements like copper, zinc, selenium. Vitamins A, D, E are crucial, with vitamin A being most important for reproduction and immunity.' },
+        { id: 2, title: 'Feed Types and Quality', duration: '25 min', content: 'Feed types include: 1) Roughages (grass, hay, silage) - should be 60-70% of diet, check for mold, dust, and proper color. 2) Concentrates (grains, oilcakes) - provide energy and protein, store in dry conditions. 3) Green fodder - fresh grass, maize, sorghum provide vitamins and minerals. Quality indicators: good smell (no musty odor), proper color (green for grass, golden for grains), no visible mold or insects, appropriate moisture content (12-14% for grains). Avoid feeding moldy, dusty, or contaminated feed as it can cause digestive disorders and toxicity.' },
+        { id: 3, title: 'Feeding Schedules', duration: '15 min', content: 'Establish regular feeding times - typically 2-3 times daily at 6-8 hour intervals. Morning feeding (6-7 AM): 40% of daily ration with fresh fodder. Afternoon feeding (2-3 PM): 30% with concentrate feed. Evening feeding (6-7 PM): 30% with roughage. Provide concentrate 30 minutes before milking to stimulate milk let-down. Gradually change feed over 7-10 days to avoid digestive upset. Lactating animals need more frequent feeding (3-4 times daily). Always feed according to body weight, production stage, and weather conditions.' },
+        { id: 4, title: 'Water Management', duration: '20 min', content: 'Water is the most important nutrient - cattle need 30-50 liters per day, lactating cows need 3-5 liters per liter of milk produced. Provide clean, fresh water at all times in clean containers. Water temperature should be 10-20°C for optimal consumption. Check water quality regularly - it should be colorless, odorless, and free from harmful bacteria. Clean water containers daily and disinfect weekly. In hot weather, increase water availability as consumption can double. Poor water quality can reduce feed intake by 25% and milk production significantly.' }
+      ]
+    },
+    {
+      id: 3,
+      title: 'Common Diseases in Farm Animals',
+      category: 'health',
+      duration: '2 hours',
+      rating: 4.9,
+      students: 2100,
+      type: 'video',
+      description: 'Learn about common diseases affecting livestock and their prevention',
+      progress: courseProgress[3] || 0,
+      lessons: [
+        { id: 1, title: 'Introduction to Animal Diseases', duration: '20 min', content: 'Animal diseases significantly impact farm productivity and profitability. Diseases can be classified as: 1) Infectious (caused by bacteria, viruses, parasites) - spread between animals. 2) Non-infectious (nutritional, genetic, environmental) - do not spread. Common infectious diseases include FMD, mastitis, pneumonia, and diarrhea. Economic losses include reduced milk production (20-50%), poor reproduction rates, treatment costs, and mortality. Prevention through vaccination, good hygiene, and proper nutrition is more cost-effective than treatment. Understanding disease patterns helps in planning preventive measures.', videoUrl: 'https://youtu.be/nV7lk3lht60?si=te81W03Vtl7tEMhs' },
+        { id: 2, title: 'Mastitis in Dairy Animals', duration: '25 min', content: 'Mastitis is inflammation of mammary glands, causing 70% of dairy losses. Types: 1) Clinical - visible symptoms like swollen udder, abnormal milk, fever. 2) Subclinical - no visible signs but reduced milk quality. Causes: bacterial infection through teat canal, poor milking hygiene, environmental contamination. Symptoms: hot, swollen, painful udder; clots or blood in milk; reduced milk yield; fever above 39.5°C. Prevention: proper milking technique, teat dipping with iodine solution, dry cow therapy, clean environment. Treatment: antibiotics as per veterinary advice, frequent milking, anti-inflammatory drugs.', videoUrl: 'https://youtu.be/qjLHifQJxAc?si=SgKZlo2vJ8Y2bviR' },
+        { id: 3, title: 'Foot and Mouth Disease', duration: '20 min', content: 'FMD is highly contagious viral disease affecting cloven-hoofed animals. Symptoms: fever (40-41°C), blisters on mouth, tongue, feet, and teats; excessive salivation; lameness; reduced milk production. Spreads through direct contact, contaminated feed/water, airborne droplets, and vehicles. Prevention: vaccination every 6 months with trivalent vaccine (O, A, Asia-1 strains), quarantine new animals, disinfect vehicles and equipment, restrict visitor movement. No specific treatment - provide supportive care, soft feed, clean water, wound care for blisters. Report suspected cases to veterinary authorities immediately.' },
+        { id: 4, title: 'Respiratory Diseases', duration: '25 min', content: 'Common respiratory diseases include pneumonia, bronchitis, and shipping fever. Causes: viral/bacterial infections, stress, poor ventilation, overcrowding, sudden weather changes. Symptoms: coughing, nasal discharge, difficulty breathing, fever, reduced appetite, depression. Pneumonia signs: rapid breathing (>30/min), mouth breathing, extended neck. Prevention: adequate ventilation, avoid overcrowding, reduce stress, vaccination against IBR/BVD, quarantine sick animals. Treatment: antibiotics for bacterial infections, anti-inflammatory drugs, supportive care with good nutrition and clean environment. Ensure proper air circulation in animal housing.' },
+        { id: 5, title: 'Digestive Disorders', duration: '20 min', content: 'Common digestive disorders: 1) Bloat - gas accumulation in rumen, causes distended left side, difficulty breathing. Emergency treatment: trocar insertion, avoid rich legume pastures. 2) Acidosis - from excess grain feeding, causes diarrhea, dehydration, lameness. Prevention: gradual feed changes, adequate fiber. 3) Diarrhea - from infections, poor feed quality, stress. Treatment: fluid therapy, probiotics, identify underlying cause. 4) Constipation - from inadequate water, poor quality feed. Provide plenty of clean water, laxatives if needed. Maintain proper feed ratios and feeding schedules.' },
+        { id: 6, title: 'Parasitic Infections', duration: '30 min', content: 'Internal parasites: 1) Roundworms - cause diarrhea, weight loss, anemia. 2) Tapeworms - segments visible in feces. 3) Liver flukes - cause liver damage, bottle jaw. External parasites: 1) Ticks - transmit diseases, cause anemia. 2) Lice - cause itching, hair loss. 3) Flies - spread diseases, reduce milk production. Control: regular deworming every 3-4 months, rotational grazing, tick control sprays, maintain clean environment. Use fecal egg count to monitor worm burden. Deworm all animals simultaneously to prevent reinfection. Choose appropriate anthelmintics based on parasite type and resistance patterns.', videoUrl: 'https://youtu.be/nV7lk3lht60?si=te81W03Vtl7tEMhs' }
+      ]
+    },
+    {
+      id: 5,
+      title: 'Animal Health Management',
+      category: 'health',
+      duration: '1.5 hours',
+      rating: 4.8,
+      students: 1850,
+      type: 'video',
+      description: 'Comprehensive guide to maintaining animal health and preventing diseases',
+      progress: courseProgress[5] || 0,
+      lessons: [
+        { id: 1, title: 'Daily Health Monitoring', duration: '20 min', content: 'Conduct systematic daily health checks: 1) Visual observation from distance - note behavior, posture, movement, appetite. 2) Close examination - check eyes (bright, clear), nose (no discharge), mouth (pink gums), body temperature (38-39°C normal). 3) Monitor vital signs - breathing rate (12-20/min for cattle), heart rate (60-80/min). 4) Check production records - milk yield, feed consumption. 5) Examine body condition score (1-5 scale, ideal 3-3.5). Record observations in health register. Early detection saves treatment costs and prevents disease spread. Train farm workers to recognize abnormal signs.', videoUrl: 'https://youtu.be/avY3IjwqdPQ?si=T7Kdlt1t4stLaGwa' },
+        { id: 2, title: 'Vaccination Schedules', duration: '25 min', content: 'Essential vaccination schedule: 1) FMD - every 6 months (all animals above 4 months). 2) Brucellosis - heifers at 4-8 months (S19 vaccine). 3) BVD - annual vaccination. 4) IBR - annual or as per outbreak. 5) Clostridial diseases - annual (8-in-1 vaccine). 6) Rabies - annual in endemic areas. Maintain cold chain (2-8°C), use sterile needles, record vaccination dates, observe animals for adverse reactions. Pregnant animals need special consideration - avoid live vaccines. Consult veterinarian for farm-specific vaccination calendar based on local disease prevalence and risk factors.', videoUrl: 'https://youtu.be/nV7lk3lht60?si=te81W03Vtl7tEMhs' },
+        { id: 3, title: 'Nutrition and Health', duration: '20 min', content: 'Proper nutrition is foundation of animal health. Malnutrition leads to: reduced immunity, poor reproduction, stunted growth, increased disease susceptibility. Key nutritional factors: 1) Energy balance - prevent ketosis in dairy cows, maintain body condition. 2) Protein quality - essential amino acids for growth and milk production. 3) Mineral balance - calcium/phosphorus ratio (2:1), adequate salt, trace elements. 4) Vitamin supplementation - especially A, D, E. 5) Water quality and quantity. Nutritional diseases: milk fever (calcium deficiency), grass tetany (magnesium deficiency), white muscle disease (selenium deficiency). Regular body condition scoring helps monitor nutritional status.' },
+        { id: 4, title: 'Biosecurity Measures', duration: '25 min', content: 'Biosecurity prevents disease introduction and spread: 1) Perimeter security - fencing, controlled entry points, visitor log. 2) Quarantine - isolate new animals for 21 days, test for diseases. 3) Sanitation - disinfect vehicles, equipment, footwear; use footbaths with 2% formalin. 4) Personnel hygiene - clean clothes, hand washing, dedicated farm clothing. 5) Feed security - avoid contaminated feed, proper storage. 6) Water source protection - prevent contamination from wildlife, other farms. 7) Waste management - proper disposal of dead animals, manure management. 8) Vector control - control flies, rodents, wild birds. Implement all-in-all-out system where possible.' }
+      ]
+    },
+    {
+      id: 4,
+      title: 'Modern Breeding Techniques',
+      category: 'breeding',
+      duration: '2.5 hours',
+      rating: 4.7,
+      students: 650,
+      type: 'video',
+      description: 'Advanced breeding methods for improved livestock',
+      progress: courseProgress[4] || 0,
+      lessons: [
+        { id: 1, title: 'Breeding Fundamentals', duration: '30 min', content: 'Animal breeding aims to improve genetic merit of livestock through selection and mating. Key principles: 1) Heritability - traits passed from parents to offspring (milk yield 25-30%, fertility 5-10%). 2) Genetic variation - differences between animals provide selection opportunity. 3) Selection intensity - choosing top performers as parents. 4) Generation interval - time between birth of parents and offspring. Breeding objectives: increase production (milk, meat), improve efficiency, enhance disease resistance, better adaptation to environment. Understand breed characteristics: Holstein for milk, Jersey for fat%, Gir for heat tolerance. Maintain breeding records for genetic evaluation.' },
+        { id: 2, title: 'Selection Criteria', duration: '35 min', content: 'Select breeding animals based on: 1) Production records - milk yield, fat%, protein%, lactation length. 2) Reproductive performance - age at first calving, calving interval, conception rate. 3) Health records - disease resistance, longevity, somatic cell count. 4) Physical traits - udder conformation, body structure, feet and legs. 5) Pedigree information - parent and grandparent performance. Selection tools: Estimated Breeding Values (EBV), Total Merit Index (TMI). Cull animals with: poor production, reproductive problems, chronic diseases, poor conformation. Maintain genetic diversity to avoid inbreeding depression. Use proven bulls with high genetic merit.' },
+        { id: 3, title: 'Artificial Insemination', duration: '40 min', content: 'AI advantages: genetic improvement, disease control, cost-effective, breeding records. AI process: 1) Heat detection - standing heat, mucus discharge, restlessness. 2) Timing - inseminate 12-18 hours after heat onset. 3) Technique - proper restraint, clean equipment, cervical deposition. 4) Semen handling - thaw at 37°C for 30 seconds, use immediately. Equipment: AI gun, sheaths, gloves, thermometer. Success factors: accurate heat detection (80% success rate), proper timing, skilled technician, good body condition of cow. Pregnancy diagnosis at 45-60 days post-AI. Maintain AI records for genetic evaluation and herd management.' },
+        { id: 4, title: 'Pregnancy Management', duration: '25 min', content: 'Pregnancy management ensures healthy calves and mothers: 1) Nutrition - increase feed by 25% in last trimester, adequate protein and minerals. 2) Health monitoring - regular checkups, vaccination schedule, parasite control. 3) Exercise - moderate exercise prevents dystocia. 4) Housing - clean, dry, comfortable maternity pen. 5) Dry period - 60 days before calving, gradual feed reduction. Pre-calving signs: udder development, relaxed pelvic ligaments, behavioral changes. Calving assistance: intervene only if necessary, maintain hygiene, call veterinarian for complications. Post-calving care: colostrum feeding within 2 hours, navel disinfection, monitor for retained placenta.' }
+      ]
     }
-    setSelectedPost(post)
-  }
+  ]
 
-  const handleAddComment = (postId) => {
-    if (!newComment.trim()) return
-    
-    const comment = {
-      id: Date.now(),
-      author: 'Current User',
-      role: 'Farmer',
-      content: newComment,
-      time: 'Just now'
-    }
-    
-    setPostComments(prev => ({
-      ...prev,
-      [postId]: [...(prev[postId] || []), comment]
-    }))
-    
-    setCommunityPosts(prev => 
-      prev.map(p => p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p)
-    )
-    
-    setNewComment('')
-  }
-
-  const handleNewPost = async (e) => {
-    e.preventDefault()
-    if (!newPost.title || !newPost.content) return
-    
-    const newPostData = {
-      id: Date.now().toString(),
-      author_name: 'Current User',
-      author_role: 'Farmer',
-      author_location: 'India',
-      title: newPost.title,
-      content: newPost.content,
-      category: newPost.category,
-      created_at: new Date().toISOString(),
-      likes: 0,
-      comments_count: 0
-    }
-    
-    try {
-      const { data, error } = await supabase.from('community_posts').insert(newPostData).select()
-      
-      if (error) throw error
-      setCommunityPosts(prev => [data[0], ...prev])
-    } catch (error) {
-      console.error('Error creating post:', error)
-      // Add to local state if database fails
-      setCommunityPosts(prev => [newPostData, ...prev])
-    }
-    
-    setNewPost({ title: '', content: '', category: 'Experience Sharing' })
-    setShowNewPostForm(false)
-  }
-
-
-
-  const filteredResources = resources.filter(resource =>
-    resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.category.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'video': return <Video className="w-4 h-4" />
-      case 'infographic': return <Image className="w-4 h-4" />
-      default: return <FileText className="w-4 h-4" />
-    }
-  }
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Learning & Awareness Hub</h2>
-        <p className="text-gray-600">Educational resources and community knowledge sharing</p>
+    <div style={{ backgroundColor: '#f9fafa', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '25px' }}>
+        <h1 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '5px' }}>
+          Education Hub
+        </h1>
+        <p style={{ fontSize: '14px', color: '#6b7280' }}>
+          Learn best practices for animal care and farm management
+        </p>
       </div>
 
-      {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-600 mt-2">Loading...</p>
+      {/* Search and Filter */}
+      <div style={{ marginBottom: '25px' }}>
+        <div style={{ position: 'relative', marginBottom: '20px', maxWidth: '400px' }}>
+          <Search style={{ 
+            position: 'absolute', 
+            left: '12px', 
+            top: '50%', 
+            transform: 'translateY(-50%)',
+            width: '16px', 
+            height: '16px', 
+            color: '#6b7280' 
+          }} />
+          <input
+            type="text"
+            placeholder="Search courses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 36px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px',
+              background: '#fff'
+            }}
+          />
         </div>
-      )}
 
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        <button
-          onClick={() => setActiveTab('resources')}
-          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-            activeTab === 'resources'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          <BookOpen className="w-4 h-4 inline mr-2" />
-          Educational Resources
-        </button>
-        <button
-          onClick={() => setActiveTab('policies')}
-          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-            activeTab === 'policies'
-              ? 'bg-white text-purple-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          <Scale className="w-4 h-4 inline mr-2" />
-          Government Policies
-        </button>
-        <button
-          onClick={() => setActiveTab('community')}
-          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-            activeTab === 'community'
-              ? 'bg-white text-green-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          <Users className="w-4 h-4 inline mr-2" />
-          Community Platform
-        </button>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb',
+                background: selectedCategory === category.id ? '#059669' : '#fff',
+                color: selectedCategory === category.id ? '#fff' : '#374151',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              {category.name} ({category.count})
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Educational Resources Tab */}
-      {activeTab === 'resources' && (
-        <div className="space-y-6">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search resources by title or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+      {/* Quick Learning Paths */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: '15px',
+        marginBottom: '30px'
+      }}>
+        <div className="card" style={{ cursor: 'pointer' }} onClick={() => setShowLearningPath('beginner')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <BookOpen style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Beginner's Guide</h3>
           </div>
-
-          {/* Resources Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredResources.map((resource) => (
-              <div key={resource.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {getTypeIcon(resource.type)}
-                      <span className="ml-1 capitalize">{resource.type}</span>
-                    </span>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{resource.category}</span>
-                  </div>
-                  
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{resource.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{resource.description}</p>
-                  
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                    <span>By {resource.author}</span>
-                    <span>{new Date(resource.created_at).toLocaleDateString()}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <Eye className="w-3 h-3 mr-1" />
-                        {resource.views}
-                      </span>
-                      <span className="flex items-center">
-                        <ThumbsUp className="w-3 h-3 mr-1" />
-                        {resource.likes}
-                      </span>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (resource.type === 'video' && resource.videoId) {
-                          setSelectedVideo(resource)
-                        } else if (resource.type === 'article') {
-                          setSelectedArticle(resource)
-                        }
-                        handleLike('resource', resource.id)
-                      }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      {resource.type === 'video' ? 'Watch Video' : 'Read Article'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Start with basic animal care</p>
         </div>
-      )}
 
-      {/* Government Policies Tab */}
-      {activeTab === 'policies' && (
-        <div className="space-y-4">
-          {policies.map((policy) => (
-            <div key={policy.id} className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-800">{policy.title}</h3>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      policy.status === 'Active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {policy.status}
-                    </span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      policy.impact === 'High'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {policy.impact} Impact
-                    </span>
+        <div className="card" style={{ cursor: 'pointer' }} onClick={() => setShowLearningPath('videos')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <Play style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Video Tutorials</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Watch expert demonstrations</p>
+        </div>
+
+        <div className="card" style={{ cursor: 'pointer' }} onClick={() => setShowLearningPath('resources')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <Download style={{ width: '20px', height: '20px', color: '#059669' }} />
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Resources</h3>
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Download guides and charts</p>
+        </div>
+      </div>
+
+      {/* Featured Courses */}
+      <div style={{ marginBottom: '40px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '20px', color: '#1f2937' }}>
+          Featured Courses
+        </h2>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '20px' 
+        }}>
+          {filteredCourses.map((course) => (
+            <div key={course.id} className="card">
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>
+                    {course.title}
+                  </h3>
+                  <div style={{ 
+                    background: course.type === 'video' ? '#dbeafe' : '#fef3c7',
+                    color: course.type === 'video' ? '#1d4ed8' : '#d97706',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '500'
+                  }}>
+                    {course.type === 'video' ? 'Video' : 'Document'}
                   </div>
-                  
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                    <span>{policy.department}</span>
-                    <span className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      January 2025
-                    </span>
-                  </div>
-                  
-                  <p className="text-gray-600 mb-4">{policy.summary}</p>
                 </div>
                 
-                <button 
-                  onClick={() => handlePolicyDownload(policy)}
-                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PDF
-                </button>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
+                  {course.description}
+                </p>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock style={{ width: '14px', height: '14px', color: '#6b7280' }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>{course.duration}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Star style={{ width: '14px', height: '14px', color: '#fbbf24', fill: '#fbbf24' }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>{course.rating}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Users style={{ width: '14px', height: '14px', color: '#6b7280' }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>{course.students}</span>
+                  </div>
+                </div>
+
+                {course.progress > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', color: '#6b7280' }}>Progress</span>
+                      <span style={{ fontSize: '12px', color: '#6b7280' }}>{course.progress}%</span>
+                    </div>
+                    <div style={{ width: '100%', height: '4px', background: '#e5e7eb', borderRadius: '2px' }}>
+                      <div style={{ 
+                        width: `${course.progress}%`, 
+                        height: '100%', 
+                        background: '#059669', 
+                        borderRadius: '2px' 
+                      }} />
+                    </div>
+                  </div>
+                )}
               </div>
+              
+              <button 
+                onClick={() => setSelectedCourse(course)}
+                style={{
+                  width: '100%',
+                  padding: '8px 16px',
+                  background: course.progress > 0 ? '#f3f4f6' : '#059669',
+                  color: course.progress > 0 ? '#374151' : '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Play style={{ width: '14px', height: '14px' }} />
+                {course.progress > 0 ? 'Continue Learning' : 'Start Course'}
+              </button>
             </div>
           ))}
         </div>
-      )}
+      </div>
 
-      {/* Community Platform Tab */}
-      {activeTab === 'community' && (
-        <div className="space-y-6">
-          {/* New Post Form */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            {!showNewPostForm ? (
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Share Your Knowledge</h3>
-                <p className="text-gray-600 mb-4">Help fellow farmers by sharing your experiences and insights</p>
-                <button 
-                  onClick={() => setShowNewPostForm(true)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center mx-auto"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Post
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleNewPost} className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Post title..."
-                  value={newPost.title}
-                  onChange={(e) => setNewPost(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
-                  required
-                />
-                <select
-                  value={newPost.category}
-                  onChange={(e) => setNewPost(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="Experience Sharing">Experience Sharing</option>
-                  <option value="Expert Advice">Expert Advice</option>
-                  <option value="Tips & Tricks">Tips & Tricks</option>
-                </select>
-                <textarea
-                  placeholder="Share your knowledge..."
-                  value={newPost.content}
-                  onChange={(e) => setNewPost(prev => ({ ...prev, content: e.target.value }))}
-                  className="w-full p-3 border rounded-lg h-32 focus:ring-2 focus:ring-green-500"
-                  required
-                />
-                <div className="flex space-x-3">
-                  <button type="submit" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
-                    <Send className="w-4 h-4 mr-2" />
-                    Post
-                  </button>
+      {/* Learning Stats */}
+      <div className="card">
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
+          Your Learning Progress
+        </h3>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669', marginBottom: '4px' }}>
+              3
+            </div>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>Courses Completed</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669', marginBottom: '4px' }}>
+              12h
+            </div>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>Learning Time</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669', marginBottom: '4px' }}>
+              85%
+            </div>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>Average Score</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669', marginBottom: '4px' }}>
+              #12
+            </div>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>Leaderboard Rank</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Course Player */}
+      {activeCourse && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: '#fff',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Course Header */}
+          <div style={{
+            padding: '20px',
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
+                {activeCourse.title}
+              </h1>
+              <p style={{ color: '#6b7280' }}>Lesson {currentLesson + 1} of {activeCourse.lessons.length}</p>
+            </div>
+            <button 
+              onClick={() => {
+                setActiveCourse(null)
+                setCurrentLesson(0)
+              }}
+              style={{
+                padding: '8px 16px',
+                background: '#f3f4f6',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              Exit Course
+            </button>
+          </div>
+          
+          {/* Course Content */}
+          <div style={{ display: 'flex', flex: 1 }}>
+            {/* Lesson Content */}
+            <div style={{ flex: 1, padding: '40px', overflow: 'auto' }}>
+              <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '16px' }}>
+                  {activeCourse.lessons[currentLesson]?.title}
+                </h2>
+                
+                {activeCourse.lessons[currentLesson]?.videoUrl ? (
+                  <div style={{ marginBottom: '30px' }}>
+                    <div style={{
+                      position: 'relative',
+                      paddingBottom: '56.25%',
+                      height: 0,
+                      overflow: 'hidden',
+                      borderRadius: '12px',
+                      background: '#000',
+                      marginBottom: '20px'
+                    }}>
+                      <iframe
+                        src={activeCourse.lessons[currentLesson].videoUrl.replace('youtu.be/', 'www.youtube.com/embed/').replace('?si=', '?')}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          border: 'none'
+                        }}
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        title={activeCourse.lessons[currentLesson].title}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                
+                <div style={{
+                  padding: '20px',
+                  background: '#f9fafb',
+                  borderRadius: '8px',
+                  marginBottom: '30px'
+                }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Lesson Content</h3>
+                  <div style={{ fontSize: '16px', lineHeight: '1.6', color: '#374151' }}>
+                    {activeCourse.lessons[currentLesson]?.content}
+                  </div>
+                </div>
+                
+                {!activeCourse.lessons[currentLesson]?.videoUrl && (
+                  <div style={{ 
+                    background: '#f3f4f6', 
+                    padding: '30px', 
+                    borderRadius: '12px', 
+                    marginBottom: '30px',
+                    minHeight: '200px',
+                    fontSize: '16px',
+                    lineHeight: '1.6',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <p>This lesson contains text-based content. Please refer to the lesson content section above.</p>
+                  </div>
+                )}
+                
+                {/* Navigation */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px' }}>
                   <button 
-                    type="button" 
-                    onClick={() => setShowNewPostForm(false)}
-                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+                    onClick={() => setCurrentLesson(Math.max(0, currentLesson - 1))}
+                    disabled={currentLesson === 0}
+                    style={{
+                      padding: '12px 24px',
+                      background: currentLesson === 0 ? '#f3f4f6' : '#059669',
+                      color: currentLesson === 0 ? '#9ca3af' : '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: currentLesson === 0 ? 'not-allowed' : 'pointer'
+                    }}
                   >
-                    Cancel
+                    Previous Lesson
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      if (currentLesson < activeCourse.lessons.length - 1) {
+                        setCurrentLesson(currentLesson + 1)
+                      } else {
+                        // Course completed
+                        const newProgress = { ...courseProgress }
+                        newProgress[activeCourse.id] = 100
+                        setCourseProgress(newProgress)
+                        alert('Congratulations! You have completed the course!')
+                        setActiveCourse(null)
+                        setCurrentLesson(0)
+                      }
+                      
+                      // Update progress
+                      const progress = Math.round(((currentLesson + 1) / activeCourse.lessons.length) * 100)
+                      const newProgress = { ...courseProgress }
+                      newProgress[activeCourse.id] = progress
+                      setCourseProgress(newProgress)
+                    }}
+                    style={{
+                      padding: '12px 24px',
+                      background: '#059669',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {currentLesson < activeCourse.lessons.length - 1 ? 'Next Lesson' : 'Complete Course'}
                   </button>
                 </div>
-              </form>
+              </div>
+            </div>
+            
+            {/* Lesson Sidebar */}
+            <div style={{
+              width: '300px',
+              background: '#f9fafb',
+              borderLeft: '1px solid #e5e7eb',
+              padding: '20px'
+            }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Course Lessons</h3>
+              <div style={{ space: '8px' }}>
+                {activeCourse.lessons.map((lesson, index) => (
+                  <div 
+                    key={lesson.id}
+                    onClick={() => setCurrentLesson(index)}
+                    style={{
+                      padding: '12px',
+                      background: index === currentLesson ? '#059669' : '#fff',
+                      color: index === currentLesson ? '#fff' : '#374151',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      marginBottom: '8px',
+                      border: '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ fontWeight: '600', fontSize: '14px' }}>
+                      {index + 1}. {lesson.title}
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                      {lesson.duration}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Progress */}
+              <div style={{ marginTop: '20px', padding: '16px', background: '#fff', borderRadius: '8px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Progress</h4>
+                <div style={{ background: '#e5e7eb', height: '8px', borderRadius: '4px', marginBottom: '8px' }}>
+                  <div style={{
+                    background: '#059669',
+                    height: '100%',
+                    borderRadius: '4px',
+                    width: `${Math.round(((currentLesson + 1) / activeCourse.lessons.length) * 100)}%`
+                  }} />
+                </div>
+                <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                  {Math.round(((currentLesson + 1) / activeCourse.lessons.length) * 100)}% Complete
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Course Preview Modal */}
+      {selectedCourse && !activeCourse && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '16px' }}>
+              {selectedCourse.title}
+            </h2>
+            <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '20px' }}>
+              {selectedCourse.description}
+            </p>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>Course Lessons:</h3>
+              <div style={{ space: '8px' }}>
+                {selectedCourse.lessons.map((lesson, index) => (
+                  <div key={lesson.id} style={{
+                    padding: '12px',
+                    background: '#f9fafb',
+                    borderRadius: '8px',
+                    marginBottom: '8px'
+                  }}>
+                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                      {index + 1}. {lesson.title}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                      Duration: {lesson.duration}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={() => {
+                  setActiveCourse(selectedCourse)
+                  setSelectedCourse(null)
+                  setCurrentLesson(0)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  background: '#059669',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Start Learning
+              </button>
+              <button 
+                onClick={() => setSelectedCourse(null)}
+                style={{
+                  padding: '12px 16px',
+                  background: '#f3f4f6',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Learning Path Modal */}
+      {showLearningPath && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px' }}>
+              {showLearningPath === 'beginner' && 'Beginner Learning Path'}
+              {showLearningPath === 'videos' && 'Video Tutorial Library'}
+              {showLearningPath === 'resources' && 'Downloadable Resources'}
+            </h2>
+            
+            {showLearningPath === 'beginner' && (
+              <div>
+                <p style={{ marginBottom: '16px', color: '#6b7280' }}>Start your journey with these essential courses:</p>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <h4 style={{ fontWeight: '600' }}>1. Basic Animal Health Management</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Learn fundamental principles of keeping animals healthy</p>
+                </div>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <h4 style={{ fontWeight: '600' }}>2. Common Diseases in Farm Animals</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Identify and prevent common livestock diseases</p>
+                </div>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <h4 style={{ fontWeight: '600' }}>3. Cattle Nutrition Guidelines</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Complete guide to proper feeding and nutrition</p>
+                </div>
+              </div>
             )}
-          </div>
-
-          {/* Community Posts */}
-          <div className="space-y-4">
-            {communityPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Users className="w-6 h-6 text-green-600" />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-semibold text-gray-800">{post.author_name}</h4>
-                      <span className="text-sm text-gray-500">•</span>
-                      <span className="text-sm text-gray-500">{post.author_role}</span>
-                      <span className="text-sm text-gray-500">•</span>
-                      <span className="text-sm text-gray-500">{post.author_location}</span>
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                        {post.category}
-                      </span>
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{post.title}</h3>
-                    <p className="text-gray-600 mb-4">{post.content}</p>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                        <button 
-                          onClick={() => handleLike('post', post.id)}
-                          className="flex items-center hover:text-blue-600 transition-colors"
-                        >
-                          <ThumbsUp className="w-4 h-4 mr-1" />
-                          {post.likes} Likes
-                        </button>
-                        <button 
-                          onClick={() => handleCommentClick(post)}
-                          className="flex items-center hover:text-blue-600 transition-colors"
-                        >
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          {post.comments_count} Comments
-                        </button>
-                      </div>
-                      
-                      <button 
-                        onClick={() => setSelectedPost(post)}
-                        className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                      >
-                        Read More
-                      </button>
-                    </div>
-                  </div>
+            
+            {showLearningPath === 'videos' && (
+              <div>
+                <p style={{ marginBottom: '16px', color: '#6b7280' }}>Watch expert demonstrations:</p>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <h4 style={{ fontWeight: '600' }}>🎥 Common Cattle Diseases</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Educational video on disease prevention and treatment</p>
+                </div>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <h4 style={{ fontWeight: '600' }}>🎥 Animal Health Management</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Comprehensive health management practices</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {/* Video Modal */}
-      {selectedVideo && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{selectedVideo.title}</h3>
-              <button 
-                onClick={() => setSelectedVideo(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="aspect-video">
-              <iframe
-                width="100%"
-                height="100%"
-                src={`https://www.youtube.com/embed/${selectedVideo.videoId}`}
-                title={selectedVideo.title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-            <div className="p-4">
-              <p className="text-gray-600 text-sm">{selectedVideo.description}</p>
-              <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
-                <span>By {selectedVideo.author}</span>
-                <span>Duration: {selectedVideo.duration}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Article Modal */}
-      {selectedArticle && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{selectedArticle.title}</h3>
-              <button 
-                onClick={() => setSelectedArticle(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-                <span>By {selectedArticle.author}</span>
-                <span>{new Date(selectedArticle.created_at).toLocaleDateString()}</span>
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{selectedArticle.category}</span>
-              </div>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{selectedArticle.content}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Post Detail Modal */}
-      {selectedPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{selectedPost.title}</h3>
-              <button 
-                onClick={() => setSelectedPost(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-                <span>By {selectedPost.author_name}</span>
-                <span>{selectedPost.author_role}</span>
-                <span>{selectedPost.author_location}</span>
-                <span>{new Date(selectedPost.created_at).toLocaleDateString()}</span>
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded">{selectedPost.category}</span>
-              </div>
-              <p className="text-gray-700 leading-relaxed mb-6">{selectedPost.content}</p>
-              
-              <div className="flex items-center space-x-6 mb-6 pb-4 border-b">
-                <button 
-                  onClick={() => handleLike('post', selectedPost.id)}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-                >
-                  <ThumbsUp className="w-5 h-5" />
-                  <span>{selectedPost.likes} Likes</span>
-                </button>
-                <span className="flex items-center space-x-2 text-gray-600">
-                  <MessageCircle className="w-5 h-5" />
-                  <span>{selectedPost.comments_count} Comments</span>
-                </span>
-              </div>
-              
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800">Comments</h4>
-                
-                <div className="flex space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
-                      rows="2"
-                    />
-                    <button 
-                      onClick={() => handleAddComment(selectedPost.id)}
-                      className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-                    >
-                      Post Comment
-                    </button>
-                  </div>
+            )}
+            
+            {showLearningPath === 'resources' && (
+              <div>
+                <p style={{ marginBottom: '16px', color: '#6b7280' }}>Download helpful guides:</p>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }} onClick={() => {
+                  const link = document.createElement('a')
+                  link.href = 'https://dahd.gov.in/sites/default/files/2025-05/Annual-Report202425.pdf'
+                  link.target = '_blank'
+                  link.click()
+                }}>
+                  <h4 style={{ fontWeight: '600' }}>📊 DAHD Annual Report 2024-25</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Official government report on animal husbandry and dairying</p>
                 </div>
-                
-                <div className="space-y-3">
-                  {(postComments[selectedPost.id] || []).map((comment) => (
-                    <div key={comment.id} className="flex space-x-3 bg-gray-50 p-3 rounded-lg">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <Users className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium text-gray-800">{comment.author}</span>
-                          <span className="text-sm text-gray-500">{comment.role}</span>
-                          <span className="text-sm text-gray-400">{comment.time}</span>
-                        </div>
-                        <p className="text-gray-700 text-sm">{comment.content}</p>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }} onClick={() => {
+                  const link = document.createElement('a')
+                  link.href = '/resources/animal-health-checklist.pdf'
+                  link.download = 'animal-health-checklist.pdf'
+                  link.click()
+                }}>
+                  <h4 style={{ fontWeight: '600' }}>📄 Animal Health Checklist</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Daily health monitoring checklist</p>
+                </div>
+                <div style={{ marginBottom: '12px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }} onClick={() => {
+                  const link = document.createElement('a')
+                  link.href = '/resources/vaccination-schedule.pdf'
+                  link.target = '_blank'
+                  link.click()
+                }}>
+                  <h4 style={{ fontWeight: '600' }}>📋 Vaccination Schedule Template</h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Track vaccination dates and schedules</p>
                 </div>
               </div>
-            </div>
+            )}
+            
+            <button 
+              onClick={() => setShowLearningPath(null)}
+              style={{
+                marginTop: '20px',
+                padding: '10px 16px',
+                background: '#059669',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

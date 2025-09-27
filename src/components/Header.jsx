@@ -1,8 +1,11 @@
-import { Menu, CloudSun, User, Bell, Search, ChevronDown, LogOut, X } from 'lucide-react'
+import { Menu, CloudSun, User, Bell, Search, ChevronDown, LogOut, X, Globe } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../contexts/LanguageContext'
+import { t } from '../translations/translations'
 
 export default function Header({ isOpen, setIsOpen, user }) {
+  const { language, changeLanguage } = useLanguage()
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [weather, setWeather] = useState({ temp: 28, description: 'Sunny' })
@@ -45,10 +48,31 @@ export default function Header({ isOpen, setIsOpen, user }) {
 
   const fetchNotifications = async () => {
     try {
+      // Only fetch animals for farmers
+      const userRole = localStorage.getItem('userRole')
+      if (userRole !== 'farmer') {
+        setNotifications([])
+        return
+      }
+      
+      // Skip if no user ID available
+      const userEmail = localStorage.getItem('userEmail')
+      if (!user?.id && !userEmail) {
+        setNotifications([])
+        return
+      }
+      
+      // Use proper user ID, not email for owner_id
+      const userId = user?.id
+      if (!userId) {
+        setNotifications([])
+        return
+      }
+      
       const { data: animals } = await supabase
         .from('animals')
         .select('id, name')
-        .eq('owner_id', user?.id)
+        .eq('owner_id', userId)
 
       const { data: healthRecords } = await supabase
         .from('health_records')
@@ -113,7 +137,7 @@ export default function Header({ isOpen, setIsOpen, user }) {
             <Search className="w-4 h-4 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Search animals, records..."
+              placeholder={t('search', language)}
               className="bg-transparent text-sm text-gray-600 placeholder-gray-400 outline-none w-48"
             />
           </div>
@@ -126,6 +150,17 @@ export default function Header({ isOpen, setIsOpen, user }) {
               <span className="text-blue-600 ml-1">{weather.description}</span>
             </div>
           </div>
+          
+          {/* Language Switcher */}
+          <button 
+            onClick={() => changeLanguage(language === 'en' ? 'hi' : 'en')}
+            className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+          >
+            <Globe className="w-4 h-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">
+              {language === 'en' ? 'हिंदी' : 'English'}
+            </span>
+          </button>
           
           {/* Notifications */}
           <div className="relative notification-dropdown">
@@ -145,7 +180,7 @@ export default function Header({ isOpen, setIsOpen, user }) {
             {showNotifications && (
               <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-800">Notifications</h3>
+                  <h3 className="font-semibold text-gray-800">{t('notifications', language)}</h3>
                   <button 
                     onClick={() => setShowNotifications(false)}
                     className="p-1 hover:bg-gray-100 rounded"
@@ -157,7 +192,7 @@ export default function Header({ isOpen, setIsOpen, user }) {
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
                       <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                      <p>No notifications</p>
+                      <p>{t('no_notifications', language)}</p>
                     </div>
                   ) : (
                     notifications.map((notif) => (
@@ -186,7 +221,7 @@ export default function Header({ isOpen, setIsOpen, user }) {
                       }}
                       className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
-                      Clear all notifications
+                      {t('cancel', language)}
                     </button>
                   </div>
                 )}

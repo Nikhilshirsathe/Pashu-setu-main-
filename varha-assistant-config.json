@@ -1,0 +1,103 @@
+{
+  "id": "a6aa90ec-1153-4e24-90a4-47a27fbbda98",
+  "orgId": "192dad13-4734-42ad-89a9-e8f34df5d66e",
+  "name": "VARHA - Farm Assistant",
+  "voice": {
+    "voiceId": "Neha",
+    "provider": "vapi"
+  },
+  "model": {
+    "model": "gpt-3.5-turbo",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are VARHA, Pashu Setu's assistant. Keep conversations brief and helpful. When users ask to connect to a doctor or vet, use navigate_to_section function with 'consultation' parameter. After calling any function, end the conversation politely to avoid reconnection loops."
+      }
+    ],
+    "provider": "openai",
+    "maxTokens": 10000,
+    "functions": [
+      {
+        "name": "connect_doctor_now",
+        "description": "ALWAYS call this when user mentions doctor, vet, connect, or call. No exceptions.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      {
+        "name": "call_vet",
+        "description": "MANDATORY function to call when user requests doctor/vet connection. Use immediately for: connect me to doctor, connect me to vet, call vet, need doctor, get doctor",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "description": "User requested doctor connection",
+              "default": "User requested doctor connection"
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "get_disease_advice",
+        "description": "Provides disease advice and health guidance for farm animals",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "animal": {
+              "type": "string",
+              "description": "Type of animal (pig, cow, chicken, etc.)"
+            },
+            "symptoms": {
+              "type": "string",
+              "description": "Symptoms or health concerns"
+            },
+            "description": {
+              "type": "string",
+              "description": "Additional details about the condition"
+            }
+          }
+        }
+      },
+      {
+        "name": "navigate_to_section",
+        "description": "Navigates user to different sections of the farm management platform",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "section": {
+              "type": "string",
+              "enum": ["consultation", "health", "records", "animals", "lab", "emergency", "pharmacy", "education", "alerts", "dashboard"],
+              "description": "Section to navigate to"
+            }
+          },
+          "required": ["section"]
+        }
+      },
+      {
+        "name": "check_animal_health",
+        "description": "Checks and reports on animal health records and status",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "animal_name": {
+              "type": "string",
+              "description": "Specific animal name to check"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "firstMessage": "Hi! I'm VARHA. I can help you connect to veterinarians, get health advice, and navigate the platform. What do you need help with?",
+  "voicemailMessage": "Please call back when you're available.",
+  "endCallMessage": "Done! Check your screen for the connection.",
+  "transcriber": {
+    "model": "nova-2",
+    "language": "en",
+    "provider": "deepgram"
+  }
+}
