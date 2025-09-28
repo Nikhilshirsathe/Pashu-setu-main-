@@ -2,7 +2,7 @@ services:
   - type: web
     name: pashu-setu
     env: static
-    buildCommand: npm install --include=optional && npm run build
+    buildCommand: npm install && ESBUILD_BINARY_PATH=node_modules/esbuild-wasm/bin/esbuild npm run build
     staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION

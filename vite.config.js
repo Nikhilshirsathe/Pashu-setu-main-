@@ -6,7 +6,11 @@ export default defineConfig({
   define: {
     global: 'globalThis'
   },
+  esbuild: {
+    target: 'es2020'
+  },
   build: {
+    target: 'es2020',
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
@@ -26,5 +30,10 @@ export default defineConfig({
   preview: {
     port: 4173,
     host: true
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'es2020'
+    }
   }
 })
