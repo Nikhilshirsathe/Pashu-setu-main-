@@ -24,6 +24,19 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 
 // Health check
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Pashu Setu Backend API', 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      'GET /health - Health check',
+      'GET /api/animals - Get animals',
+      'POST /api/consultations/request - Request consultation'
+    ]
+  })
+})
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() })
 })
