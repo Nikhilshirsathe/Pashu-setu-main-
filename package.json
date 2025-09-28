@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node ./node_modules/vite/bin/vite.js build",
+    "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "start": "vite preview --port $PORT --host 0.0.0.0",
@@ -28,6 +28,7 @@
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
+    "esbuild-linux-64": "^0.19.0",
     "esbuild-wasm": "^0.19.0",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
