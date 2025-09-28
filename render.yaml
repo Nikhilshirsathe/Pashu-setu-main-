@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pashu-setu
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_SUPABASE_URL
+        value: https://liqvncjksywdybfbbxmk.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpcXZuY2prc3l3ZHliZmJieG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMTI3NzcsImV4cCI6MjA3Mzg4ODc3N30.UsJiFYt1PHW_rWg4I30wQX_p0mQNooxpc3nralv5yoM
+      - key: VITE_VAPI_PUBLIC_KEY
+        value: e3dada17-80eb-43a5-8466-ea5872e555d7
