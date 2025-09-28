@@ -3,11 +3,13 @@ services:
     name: pashu-setu-backend
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install --no-optional
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: ESBUILD_BINARY_PATH
+        value: node_modules/esbuild-wasm/bin/esbuild
       - key: SUPABASE_URL
         value: https://liqvncjksywdybfbbxmk.supabase.co
       - key: SUPABASE_SERVICE_KEY
