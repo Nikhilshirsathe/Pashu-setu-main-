@@ -2,11 +2,11 @@ services:
   - type: web
     name: pashu-setu
     env: static
-    buildCommand: npm ci && npx vite build
+    buildCommand: npm install && ./node_modules/.bin/vite build
     staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
       - key: VITE_SUPABASE_URL
         value: https://liqvncjksywdybfbbxmk.supabase.co
       - key: VITE_SUPABASE_ANON_KEY
