@@ -2,7 +2,7 @@ services:
   - type: web
     name: pashu-setu
     env: static
-    buildCommand: npm install -g vite && npm install && vite build
+    buildCommand: yarn install && yarn build
     staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
