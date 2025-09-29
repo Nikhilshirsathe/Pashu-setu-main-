@@ -8,7 +8,7 @@
     "build": "node node_modules/vite/bin/vite.js build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "start": "node node_modules/vite/bin/vite.js preview --port $PORT --host 0.0.0.0",
+    "start": "node node_modules/vite/bin/vite.js preview --port $PORT --host 0.0.0.0 --strictPort",
     "deploy": "npm run build"
   },
   "dependencies": {

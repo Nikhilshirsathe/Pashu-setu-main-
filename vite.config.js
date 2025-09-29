@@ -30,7 +30,8 @@ export default defineConfig({
   },
   preview: {
     port: 4173,
-    host: true
+    host: true,
+    allowedHosts: ['pashu-setu-bolte.onrender.com']
   },
   optimizeDeps: {
     esbuildOptions: {
