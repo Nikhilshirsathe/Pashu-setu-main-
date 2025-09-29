@@ -261,8 +261,8 @@ export default function App() {
           user={user}
         />
         
-        <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'ml-0'}`}>
-          <main className="p-6 min-h-screen mt-20">
+        <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
+          <main className="p-4 lg:p-6 min-h-screen mt-16 lg:mt-20">
             <CurrentPage onStartVideoCall={(callData) => {
               console.log('Video call started from App:', callData)
               // Store current path before starting video call

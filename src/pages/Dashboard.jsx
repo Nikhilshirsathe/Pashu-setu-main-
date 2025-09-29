@@ -229,12 +229,12 @@ export default function Dashboard() {
   return (
     <div style={{ backgroundColor: '#f9fafa', minHeight: '100vh' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 md:gap-0">
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937', marginBottom: '8px' }}>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
             {t('welcome_back', language)}, {userName}! 👋
           </h1>
-          <p style={{ fontSize: '16px', color: '#4b5563', marginBottom: '4px', fontWeight: '500' }}>
+          <p className="text-sm md:text-base text-gray-600 mb-1 font-medium">
             {userRole === 'farmer' ? t('manage_livestock_health', language) :
              userRole === 'veterinarian' ? 'Provide expert consultation and monitor animal health across farms' :
              userRole === 'volunteer' ? 'Support farmers with education, outreach, and community health programs' :
@@ -242,7 +242,7 @@ export default function Dashboard() {
              userRole === 'dispatcher' ? 'Coordinate emergency responses and manage ambulance services' :
              'Your comprehensive animal healthcare management platform'}
           </p>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>
+          <p className="text-xs md:text-sm text-gray-500">
             {userRole === 'farmer' ? t('keep_animals_healthy_ai', language) :
              userRole === 'veterinarian' ? 'Access patient records, provide remote consultations, and track treatment outcomes' :
              userRole === 'volunteer' ? 'Help bridge the gap between farmers and healthcare services in your community' :
@@ -251,7 +251,7 @@ export default function Dashboard() {
              'Streamline your workflow with integrated tools and real-time insights'}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div className="flex items-center gap-2 md:gap-4 flex-wrap">
           {weather && (
             <div style={{ 
               background: '#f0f9ff', 
@@ -374,12 +374,7 @@ export default function Dashboard() {
       </div>
 
       {/* Role-Specific Quick Actions */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-        gap: '15px',
-        marginBottom: '40px'
-      }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {userRole === 'farmer' && (
           <>
             <div className="card" style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '1px solid #0ea5e9' }} onClick={() => navigateTo('consultation')}>
@@ -547,9 +542,9 @@ export default function Dashboard() {
       </div>
 
       {/* Core Healthcare Services */}
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: '#1f2937' }}>
+      <div className="mb-8">
+        <div className="mb-6">
+          <h2 className="text-lg md:text-xl font-bold mb-2 text-gray-900">
             {userRole === 'farmer' ? `🏥 ${t('comprehensive_healthcare_services', language)}` :
              userRole === 'veterinarian' ? '👩‍⚕️ Professional Veterinary Tools' :
              userRole === 'volunteer' ? '🤝 Community Support Services' :
@@ -557,7 +552,7 @@ export default function Dashboard() {
              userRole === 'dispatcher' ? '🚨 Emergency Response Center' :
              '🏥 Healthcare Services'}
           </h2>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>
+          <p className="text-sm text-gray-600">
             {userRole === 'farmer' ? t('access_professional_veterinary_care', language) :
              userRole === 'veterinarian' ? 'Advanced tools for patient management, consultation, and treatment planning' :
              userRole === 'volunteer' ? 'Resources and tools to support farming communities and health education' :
@@ -566,11 +561,7 @@ export default function Dashboard() {
              'Professional tools for animal healthcare management'}
           </p>
         </div>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
-          gap: '20px' 
-        }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="card" style={{ cursor: 'pointer', border: '2px solid #10b981', background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' }} onClick={() => navigateTo('consultation')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
               <div style={{ 
@@ -695,11 +686,11 @@ export default function Dashboard() {
 
       {/* Recent Activities */}
       {activities.length > 0 && (
-        <div className="card" style={{ marginBottom: '40px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
+        <div className="card mb-8">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
             {t('recent_activities', language)}
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex flex-col gap-3">
             {activities.slice(0, 5).map((activity, index) => {
               const Icon = activity.icon
               return (

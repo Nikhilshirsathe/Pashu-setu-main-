@@ -178,7 +178,7 @@ export default function Sidebar({ activeSection, setActiveSection, isOpen, setIs
       <div className={`fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden ${isOpen ? 'block' : 'hidden'}`} 
            onClick={() => setIsOpen(false)} />
       
-      <div className={`fixed left-0 top-20 h-[calc(100vh-5rem)] w-64 bg-white shadow-lg z-20 transform transition-transform duration-300 border-r border-gray-200 overflow-hidden flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 border-r border-gray-200 overflow-hidden flex flex-col lg:translate-x-0 lg:z-20 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
 
         
         <nav className="p-4 overflow-y-auto flex-1">

@@ -116,24 +116,27 @@ export default function Header({ isOpen, setIsOpen, user }) {
     }
   }
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 fixed top-0 left-0 right-0 z-30 w-full">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 fixed top-0 left-0 right-0 z-40 w-full">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 lg:space-x-4">
           <button 
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
           >
             <Menu className="w-6 h-6 text-gray-600" />
           </button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Pashu Setu</h1>
-            <p className="text-sm text-gray-500">Animal Healthcare Management System</p>
+          <div className="hidden sm:block">
+            <h1 className="text-lg lg:text-xl font-bold text-gray-800">Pashu Setu</h1>
+            <p className="text-xs lg:text-sm text-gray-500 hidden md:block">Animal Healthcare Management System</p>
+          </div>
+          <div className="sm:hidden">
+            <h1 className="text-lg font-bold text-gray-800">Pashu Setu</h1>
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 lg:space-x-4">
           {/* Search Bar */}
-          <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-4 py-2 space-x-2">
+          <div className="hidden lg:flex items-center bg-gray-100 rounded-lg px-4 py-2 space-x-2">
             <Search className="w-4 h-4 text-gray-400" />
             <input 
               type="text" 
@@ -143,21 +146,21 @@ export default function Header({ isOpen, setIsOpen, user }) {
           </div>
           
           {/* Weather */}
-          <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+          <div className="hidden sm:flex items-center space-x-2 bg-blue-50 px-2 lg:px-3 py-1 lg:py-2 rounded-lg border border-blue-200">
             <CloudSun className="w-4 h-4 text-blue-600" />
-            <div className="text-sm">
+            <div className="text-xs lg:text-sm">
               <span className="text-blue-700 font-medium">{weather.temp}°C</span>
-              <span className="text-blue-600 ml-1">{weather.description}</span>
+              <span className="text-blue-600 ml-1 hidden md:inline">{weather.description}</span>
             </div>
           </div>
           
           {/* Language Switcher */}
           <button 
             onClick={() => changeLanguage(language === 'en' ? 'hi' : 'en')}
-            className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            className="flex items-center space-x-1 lg:space-x-2 p-1 lg:p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
           >
             <Globe className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-xs lg:text-sm font-medium text-gray-700 hidden sm:inline">
               {language === 'en' ? 'हिंदी' : 'English'}
             </span>
           </button>
@@ -178,7 +181,7 @@ export default function Header({ isOpen, setIsOpen, user }) {
             
             {/* Notification Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
+              <div className="absolute right-0 top-12 w-72 sm:w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-800">{t('notifications', language)}</h3>
                   <button 
@@ -230,19 +233,22 @@ export default function Header({ isOpen, setIsOpen, user }) {
           </div>
           
           {/* User Profile */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+          <div className="flex items-center space-x-1 lg:space-x-3">
+            <div className="hidden md:flex items-center space-x-2 bg-green-50 px-2 lg:px-3 py-1 lg:py-2 rounded-lg border border-green-200">
               <User className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-green-700">
-                {user?.email || 'User'}
+              <span className="text-xs lg:text-sm font-medium text-green-700">
+                {user?.email?.split('@')[0] || 'User'}
               </span>
+            </div>
+            <div className="md:hidden bg-green-50 p-2 rounded-lg border border-green-200">
+              <User className="w-4 h-4 text-green-600" />
             </div>
             <button 
               onClick={() => supabase.auth.signOut()}
-              className="p-2 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+              className="p-1 lg:p-2 hover:bg-red-50 rounded-lg transition-all duration-200 group"
               title="Logout"
             >
-              <LogOut className="w-5 h-5 text-gray-600 group-hover:text-red-600" />
+              <LogOut className="w-4 lg:w-5 h-4 lg:h-5 text-gray-600 group-hover:text-red-600" />
             </button>
           </div>
 

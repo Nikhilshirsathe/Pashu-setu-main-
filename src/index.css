@@ -58,6 +58,18 @@ body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ensure mobile viewport */
+@viewport {
+  width: device-width;
+  zoom: 1.0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 /* Animated gradient keyframes */
@@ -262,14 +274,49 @@ body {
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;
-  padding: 20px;
+  padding: 16px;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   transition: transform 0.2s ease;
 }
 
+@media (min-width: 768px) {
+  .card {
+    padding: 20px;
+  }
+}
+
 .card:hover {
   transform: translateY(-3px);
+}
+
+/* Mobile Responsive Utilities */
+@media (max-width: 768px) {
+  .mobile-full-width {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+  }
+  
+  .mobile-p-4 {
+    padding: 1rem !important;
+  }
+  
+  .mobile-gap-2 {
+    gap: 0.5rem !important;
+  }
+  
+  .mobile-grid-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  
+  .mobile-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }
 
 .card-header {
