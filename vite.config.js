@@ -21,7 +21,8 @@ export default defineConfig({
           supabase: ['@supabase/supabase-js']
         }
       }
-    }
+    },
+    copyPublicDir: true
   },
   server: {
     port: 3000,

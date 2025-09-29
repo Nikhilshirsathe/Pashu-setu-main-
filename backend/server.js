@@ -18,7 +18,7 @@ const supabase = createClient(
 // Middleware
 app.use(helmet())
 app.use(cors({
-  origin: ['https://pashu-setu-2-0.onrender.com', 'http://localhost:5173'],
+  origin: ['https://pashu-setu-frontend.onrender.com', 'http://localhost:5173'],
   credentials: true
 }))
 app.use(express.json({ limit: '10mb' }))
